@@ -1,0 +1,6 @@
+@IPC2_Proy03_202602_202505018_HostAddress = http://localhost:5188
+
+GET {{IPC2_Proy03_202602_202505018_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
