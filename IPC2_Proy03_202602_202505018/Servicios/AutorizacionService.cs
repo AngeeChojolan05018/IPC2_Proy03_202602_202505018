@@ -56,6 +56,33 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                     Solicitud = factura
                 };
 
+                string tiempo = factura.TIEMPO ?? string.Empty;
+
+                string fechaTexto = tiempo
+                    .Replace("Guatemala,", "")
+                    .Replace("hrs.", "")
+                    .Trim();
+
+                if (DateTime.TryParseExact(
+                    fechaTexto,
+                    "dd/MM/yyyy HH:mm",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out DateTime fechaEmision))
+                {
+                    registro.FechaEmision = fechaEmision;
+                }
+                else
+                {
+                    registro.Errores.FechaInvalida = true;
+
+                    registro.MotivoRechazo =
+                        "La fecha de emisión es inválida.";
+
+                    registros.Add(registro);
+                    continue;
+                }
+
                 string referencia =
                     (factura.REFERENCIA ?? string.Empty).Trim();
 
@@ -176,6 +203,10 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             return respuesta;
         }
 
+        public List<RegistroFactura> ObtenerFacturas()
+        {
+            return ObtenerRegistros();
+        }
         private List<RegistroFactura> ObtenerRegistros()
         {
             string contenido = File.ReadAllText(rutaArchivo);

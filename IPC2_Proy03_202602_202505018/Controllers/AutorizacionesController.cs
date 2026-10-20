@@ -16,6 +16,12 @@ namespace IPC2_Proy03_202602_202505018.Controllers
             this.servicio = servicio;
         }
 
+        [HttpGet]
+        public ActionResult<List<RegistroFactura>> Obtener()
+        {
+            return Ok(servicio.ObtenerFacturas());
+        }
+
         [HttpPost]
         public ActionResult<RespuestaAutorizaciones> Procesar(
             [FromBody] List<Factura> facturas)
