@@ -22,6 +22,39 @@ namespace IPC2_Proy03_202602_202505018.Controllers
             return Ok(servicio.ObtenerFacturas());
         }
 
+        [HttpGet("buscar/{referencia}")]
+        public ActionResult<RegistroFactura> Buscar(string referencia)
+        {
+            RegistroFactura? factura =
+                servicio.BuscarPorReferencia(referencia);
+
+            if (factura == null)
+            {
+                return NotFound("No se encontró una factura aprobada con esa referencia.");
+            }
+
+            return Ok(factura);
+        }
+
+        [HttpGet("nit/{nit}")]
+        public ActionResult<List<RegistroFactura>> BuscarPorNIT(string nit)
+        {
+            List<RegistroFactura> facturas =
+                servicio.BuscarPorNIT(nit);
+
+            return Ok(facturas);
+        }
+
+        [HttpGet("rechazadas")]
+        public ActionResult<List<RegistroFactura>> ObtenerRechazadas()
+        {
+            List<RegistroFactura> facturas =
+                servicio.ObtenerFacturasRechazadas();
+
+            return Ok(facturas);
+        }
+        
+
         [HttpPost]
         public ActionResult<RespuestaAutorizaciones> Procesar(
             [FromBody] List<Factura> facturas)

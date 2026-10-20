@@ -1,5 +1,8 @@
 ﻿
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Text.Json;
 using IPC2_Proy03_202602_202505018.Modelos;
 
@@ -41,6 +44,7 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             List<Factura> facturas)
         {
             List<RegistroFactura> registros = ObtenerRegistros();
+
             List<Contribuyente> contribuyentes =
                 servicioRTU.ObtenerContribuyentes();
 
@@ -207,6 +211,69 @@ namespace IPC2_Proy03_202602_202505018.Servicios
         {
             return ObtenerRegistros();
         }
+
+        public List<RegistroFactura> ObtenerFacturasRechazadas()
+        {
+            List<RegistroFactura> registros = ObtenerRegistros();
+
+            List<RegistroFactura> rechazadas =
+                new List<RegistroFactura>();
+
+            foreach (RegistroFactura registro in registros)
+            {
+                if (!registro.Aprobada)
+                {
+                    rechazadas.Add(registro);
+                }
+            }
+
+            return rechazadas;
+        }
+
+        public RegistroFactura? BuscarPorReferencia(string referencia)
+        {
+            List<RegistroFactura> registros = ObtenerRegistros();
+
+            return registros.Find(r =>
+                r.Aprobada &&
+                string.Equals(
+                    r.Solicitud.REFERENCIA,
+                    referencia.Trim(),
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        public List<RegistroFactura> BuscarPorNIT(string nit)
+        {
+            List<RegistroFactura> registros = ObtenerRegistros();
+
+            List<RegistroFactura> resultados =
+                new List<RegistroFactura>();
+
+            string nitBuscado = NormalizarNit(nit);
+
+            foreach (RegistroFactura registro in registros)
+            {
+                if (!registro.Aprobada)
+                {
+                    continue;
+                }
+
+                string nitEmisor =
+                    NormalizarNit(registro.Solicitud.NIT_EMISOR);
+
+                string nitReceptor =
+                    NormalizarNit(registro.Solicitud.NIT_RECEPTOR);
+
+                if (nitEmisor == nitBuscado ||
+                    nitReceptor == nitBuscado)
+                {
+                    resultados.Add(registro);
+                }
+            }
+
+            return resultados;
+        }
+
         private List<RegistroFactura> ObtenerRegistros()
         {
             string contenido = File.ReadAllText(rutaArchivo);
