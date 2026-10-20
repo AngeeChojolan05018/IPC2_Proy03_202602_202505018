@@ -18,8 +18,7 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             Match coincidencia = Formato.Match(nitNormalizado);
 
             if (!coincidencia.Success)
-
-
+            {
                 return false;
             }
 
