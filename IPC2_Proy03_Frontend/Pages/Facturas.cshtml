@@ -1,0 +1,68 @@
+﻿@page
+@model IPC2_Proy03_Frontend.Pages.FacturasModel
+
+@{
+    ViewData["Title"] = "Autorización de facturas";
+}
+
+<div class="container mt-4">
+    <h2>Autorización de facturas</h2>
+    <p class="text-muted">
+        Envía solicitudes de autorización de facturas
+        electrónicas a la API.
+    </p>
+
+    <div class="card p-4 mb-4">
+        <h4>Enviar facturas</h4>
+
+        <form method="post" enctype="multipart/form-data">
+
+            <div class="mb-3">
+                <label class="form-label">
+                    Cargar archivo JSON
+                </label>
+
+                <input type="file"
+                       asp-for="Archivo"
+                       accept=".json,application/json"
+                       class="form-control" />
+
+                <small class="text-muted">
+                    Puedes cargar un archivo o pegar el JSON abajo.
+                    Si haces ambas cosas, se utilizará el archivo.
+                </small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">
+                    Pegar solicitudes JSON
+                </label>
+
+                <textarea asp-for="ContenidoJson"
+                          class="form-control"
+                          rows="12"
+                          placeholder='[{"TIEMPO":"Guatemala, 20/10/2026 12:00 hrs.","REFERENCIA":"NUEVA001","NIT_EMISOR":"7378106","NIT_RECEPTOR":"8338817","VALOR":100,"IVA":12,"TOTAL":112}]'></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Procesar facturas
+            </button>
+        </form>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+    {
+        <div class="alert @(Model.Exito ? "alert-success" : "alert-info")">
+            @Model.Mensaje
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.Resultado))
+    {
+        <div class="card p-4">
+            <h4>Respuesta de la API</h4>
+
+            <pre style="white-space:pre-wrap;overflow:auto;max-height:500px;">@Model.Resultado</pre>
+        </div>
+    }
+</div>

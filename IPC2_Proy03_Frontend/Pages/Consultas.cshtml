@@ -1,0 +1,116 @@
+﻿@page
+@model IPC2_Proy03_Frontend.Pages.ConsultasModel
+
+@{
+    ViewData["Title"] = "Consultas de facturas";
+}
+
+<div class="container mt-4">
+    <h2>Consultas de facturas</h2>
+    <p class="text-muted">
+        Consulta los documentos procesados por el sistema.
+    </p>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-6">
+            <div class="card p-4 h-100">
+                <h4>Buscar por referencia</h4>
+
+                <form method="post" asp-page-handler="Referencia">
+                    <label class="form-label">
+                        Referencia de la factura
+                    </label>
+
+                    <input asp-for="Referencia"
+                           class="form-control mb-3"
+                           placeholder="Ejemplo: A1990" />
+
+                    <button class="btn btn-primary" type="submit">
+                        Buscar referencia
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-4 h-100">
+                <h4>Buscar por NIT</h4>
+
+                <form method="post" asp-page-handler="Nit">
+                    <label class="form-label">
+                        NIT del contribuyente
+                    </label>
+
+                    <input asp-for="NIT"
+                           class="form-control mb-3"
+                           placeholder="Ejemplo: 7378106" />
+
+                    <button class="btn btn-primary" type="submit">
+                        Buscar NIT
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-4 h-100">
+                <h4>Buscar por fecha</h4>
+
+                <form method="post" asp-page-handler="Fecha">
+                    <label class="form-label">
+                        Fecha de emisión
+                    </label>
+
+                    <input asp-for="Fecha"
+                           type="date"
+                           class="form-control mb-3" />
+
+                    <button class="btn btn-primary" type="submit">
+                        Buscar fecha
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-4 h-100">
+                <h4>Listados generales</h4>
+
+                <form method="post"
+                      asp-page-handler="Aprobadas"
+                      class="mb-3">
+                    <button class="btn btn-success w-100"
+                            type="submit">
+                        Ver facturas aprobadas
+                    </button>
+                </form>
+
+                <form method="post"
+                      asp-page-handler="Rechazadas">
+                    <button class="btn btn-danger w-100"
+                            type="submit">
+                        Ver facturas rechazadas
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+    {
+        <div class="alert @(Model.Exito ? "alert-success" : "alert-info")">
+            @Model.Mensaje
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.Resultado))
+    {
+        <div class="card p-4">
+            <h4>Resultados de la consulta</h4>
+
+            <pre style="white-space:pre-wrap;overflow:auto;max-height:600px;">@Model.Resultado</pre>
+        </div>
+    }
+</div>

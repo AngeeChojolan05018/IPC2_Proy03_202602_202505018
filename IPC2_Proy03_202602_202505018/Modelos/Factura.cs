@@ -6,16 +6,16 @@ namespace IPC2_Proy03_202602_202505018.Modelos
     public class Factura
     {
         [JsonPropertyName("TIEMPO")]
-        public string TIEMPO { get; set; } = string.Empty;
+        public string TIEMPO { get; set; } = "";
 
         [JsonPropertyName("REFERENCIA")]
-        public string REFERENCIA { get; set; } = string.Empty;
+        public string REFERENCIA { get; set; } = "";
 
         [JsonPropertyName("NIT_EMISOR")]
-        public string NIT_EMISOR { get; set; } = string.Empty;
+        public string NIT_EMISOR { get; set; } = "";
 
         [JsonPropertyName("NIT_RECEPTOR")]
-        public string NIT_RECEPTOR { get; set; } = string.Empty;
+        public string NIT_RECEPTOR { get; set; } = "";
 
         [JsonPropertyName("VALOR")]
         public decimal VALOR { get; set; }
@@ -27,4 +27,3 @@ namespace IPC2_Proy03_202602_202505018.Modelos
         public decimal TOTAL { get; set; }
     }
 }
-

@@ -1,0 +1,45 @@
+﻿@page
+@model IPC2_Proy03_Frontend.Pages.RTUModel
+
+@{
+    ViewData["Title"] = "Gestión de RTU";
+}
+
+<div class="container mt-4">
+    <h2>Gestión de RTU</h2>
+    <p>Registro Tributario Unificado de contribuyentes.</p>
+
+    <div class="card p-4 mb-4">
+        <h4>Actualizar contribuyentes</h4>
+
+        <form method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label class="form-label">
+                    Seleccionar archivo JSON
+                </label>
+
+                <input type="file"
+                       asp-for="Archivo"
+                       accept=".json,application/json"
+                       class="form-control" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Cargar RTU
+            </button>
+        </form>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+    {
+        <div class="alert alert-info">
+            @Model.Mensaje
+        </div>
+    }
+
+    <div class="card p-4">
+        <h4>Contribuyentes registrados</h4>
+
+        <pre style="white-space:pre-wrap;overflow:auto;">@Model.ContribuyentesJson</pre>
+    </div>
+</div>
