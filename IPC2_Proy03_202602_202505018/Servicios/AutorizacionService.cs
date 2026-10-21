@@ -60,6 +60,8 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                     Solicitud = factura
                 };
 
+                // VALIDAR FECHA
+
                 string tiempo = factura.TIEMPO ?? string.Empty;
 
                 string fechaTexto = tiempo
@@ -87,13 +89,18 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                     continue;
                 }
 
+                // VALIDAR REFERENCIA
+
                 string referencia =
                     (factura.REFERENCIA ?? string.Empty).Trim();
 
                 factura.REFERENCIA = referencia;
 
-                if (referencia.Length == 0 || referencia.Length > 40)
+                if (referencia.Length == 0 ||
+                    referencia.Length > 40)
                 {
+                    registro.Errores.ReferenciaInvalida = true;
+
                     registro.MotivoRechazo =
                         "La referencia debe tener entre 1 y 40 caracteres.";
 
@@ -103,12 +110,14 @@ namespace IPC2_Proy03_202602_202505018.Servicios
 
                 bool referenciaDuplicada = registros.Exists(
                     r => string.Equals(
-                        r.Solicitud.REFERENCIA.Trim(),
+                        r.Solicitud.REFERENCIA,
                         referencia,
                         StringComparison.OrdinalIgnoreCase));
 
                 if (referenciaDuplicada)
                 {
+                    registro.Errores.ReferenciaDuplicada = true;
+
                     registro.MotivoRechazo =
                         "La referencia ya fue utilizada.";
 
@@ -116,19 +125,35 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                     continue;
                 }
 
-                string nitEmisor = NormalizarNit(factura.NIT_EMISOR);
-                string nitReceptor = NormalizarNit(factura.NIT_RECEPTOR);
+                // VALIDAR NIT
 
-                bool emisorValido = validador.EsValido(nitEmisor);
-                bool receptorValido = validador.EsValido(nitReceptor);
+                string nitEmisor =
+                    NormalizarNit(factura.NIT_EMISOR);
+
+                string nitReceptor =
+                    NormalizarNit(factura.NIT_RECEPTOR);
+
+                bool emisorValido =
+                    validador.EsValido(nitEmisor);
+
+                bool receptorValido =
+                    validador.EsValido(nitReceptor);
 
                 if (!emisorValido || !receptorValido)
                 {
+                    registro.Errores.NitEmisorInvalido =
+                        !emisorValido;
+
+                    registro.Errores.NitReceptorInvalido =
+                        !receptorValido;
+
                     registro.MotivoRechazo = "NIT inválido.";
 
                     registros.Add(registro);
                     continue;
                 }
+
+                // COMPROBAR EXISTENCIA EN RTU
 
                 bool emisorExiste = contribuyentes.Exists(
                     c => NormalizarNit(c.NIT) == nitEmisor);
@@ -140,12 +165,16 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                 {
                     if (!emisorExiste)
                     {
+                        registro.Errores.NitEmisorInexistente = true;
+
                         respuesta.Resultado
                             .CantidadRechazadasPorEmisorInexistente++;
                     }
 
                     if (!receptorExiste)
                     {
+                        registro.Errores.NitReceptorInexistente = true;
+
                         respuesta.Resultado
                             .CantidadRechazadasPorReceptorInexistente++;
                     }
@@ -157,6 +186,21 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                     continue;
                 }
 
+                // VALIDAR VALOR
+
+                if (factura.VALOR <= 0)
+                {
+                    registro.Errores.ValorInvalido = true;
+
+                    registro.MotivoRechazo =
+                        "El valor de la factura debe ser mayor que cero.";
+
+                    registros.Add(registro);
+                    continue;
+                }
+
+                // VALIDAR IVA Y TOTAL
+
                 decimal ivaEsperado = decimal.Round(
                     factura.VALOR * 0.12m,
                     2,
@@ -165,16 +209,28 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                 decimal totalEsperado =
                     factura.VALOR + ivaEsperado;
 
-                if (factura.VALOR <= 0 ||
-                    factura.IVA != ivaEsperado ||
-                    factura.TOTAL != totalEsperado)
+                bool ivaIncorrecto =
+                    factura.IVA != ivaEsperado;
+
+                bool totalIncorrecto =
+                    factura.TOTAL != totalEsperado;
+
+                if (ivaIncorrecto || totalIncorrecto)
                 {
+                    registro.Errores.IvaMalCalculado =
+                        ivaIncorrecto;
+
+                    registro.Errores.TotalMalCalculado =
+                        totalIncorrecto;
+
                     registro.MotivoRechazo =
-                        "El valor, el IVA o el total son incorrectos.";
+                        "El IVA o el total son incorrectos.";
 
                     registros.Add(registro);
                     continue;
                 }
+
+                // GENERAR CODIGO DE APROBACION
 
                 int correlativo = ObtenerSiguienteCorrelativo(
                     registros,
@@ -192,7 +248,8 @@ namespace IPC2_Proy03_202602_202505018.Servicios
 
                 registros.Add(registro);
 
-                respuesta.Resultado.CantidadAutorizacionesAprobadas++;
+                respuesta.Resultado
+                    .CantidadAutorizacionesAprobadas++;
 
                 respuesta.Resultado.DetalleAprobaciones.Add(
                     new DetalleAprobacion
@@ -207,10 +264,87 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             return respuesta;
         }
 
+
+        public EstadisticasFacturas ObtenerEstadisticas()
+        {
+            List<RegistroFactura> registros = ObtenerRegistros();
+
+            EstadisticasFacturas estadisticas =
+                new EstadisticasFacturas();
+
+            foreach (RegistroFactura registro in registros)
+            {
+                estadisticas.TotalFacturas++;
+
+                if (registro.Aprobada)
+                {
+                    estadisticas.FacturasAprobadas++;
+
+                    estadisticas.MontoTotalAprobado +=
+                        registro.Solicitud.TOTAL;
+
+                    estadisticas.IvaTotalAprobado +=
+                        registro.Solicitud.IVA;
+                }
+                else
+                {
+                    estadisticas.FacturasRechazadas++;
+
+                    estadisticas.MontoTotalRechazado +=
+                        registro.Solicitud.TOTAL;
+                }
+            }
+
+            return estadisticas;
+        }
+
+
+        public List<RegistroFactura> ObtenerFacturasAprobadas()
+        {
+            List<RegistroFactura> registros = ObtenerRegistros();
+
+            List<RegistroFactura> aprobadas =
+                new List<RegistroFactura>();
+
+            foreach (RegistroFactura registro in registros)
+            {
+                if (registro.Aprobada)
+                {
+                    aprobadas.Add(registro);
+                }
+            }
+
+            return aprobadas;
+        }
+
+        public List<RegistroFactura> BuscarPorFecha(DateTime fecha)
+        {
+            List<RegistroFactura> registros = ObtenerRegistros();
+
+            List<RegistroFactura> resultados =
+                new List<RegistroFactura>();
+
+            foreach (RegistroFactura registro in registros)
+            {
+                if (registro.FechaEmision.Date == fecha.Date)
+                {
+                    resultados.Add(registro);
+                }
+            }
+
+            return resultados;
+        }
+
+
+
+        // CONSULTAR TODAS LAS FACTURAS
+
         public List<RegistroFactura> ObtenerFacturas()
         {
             return ObtenerRegistros();
         }
+
+        // CONSULTAR FACTURAS RECHAZADAS
 
         public List<RegistroFactura> ObtenerFacturasRechazadas()
         {
@@ -230,7 +364,10 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             return rechazadas;
         }
 
-        public RegistroFactura? BuscarPorReferencia(string referencia)
+        // BUSCAR FACTURA APROBADA POR REFERENCIA
+
+        public RegistroFactura? BuscarPorReferencia(
+            string referencia)
         {
             List<RegistroFactura> registros = ObtenerRegistros();
 
@@ -241,6 +378,8 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                     referencia.Trim(),
                     StringComparison.OrdinalIgnoreCase));
         }
+
+        // BUSCAR FACTURAS APROBADAS POR NIT
 
         public List<RegistroFactura> BuscarPorNIT(string nit)
         {
@@ -274,6 +413,8 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             return resultados;
         }
 
+        // LEER ARCHIVO JSON
+
         private List<RegistroFactura> ObtenerRegistros()
         {
             string contenido = File.ReadAllText(rutaArchivo);
@@ -281,6 +422,8 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             return JsonSerializer.Deserialize<List<RegistroFactura>>(
                 contenido) ?? new List<RegistroFactura>();
         }
+
+        // GUARDAR ARCHIVO JSON
 
         private void GuardarRegistros(
             List<RegistroFactura> registros)
@@ -295,6 +438,8 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             File.WriteAllText(rutaArchivo, json);
         }
 
+        // NORMALIZAR NIT
+
         private static string NormalizarNit(string? nit)
         {
             return (nit ?? string.Empty)
@@ -302,6 +447,8 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                 .Replace("-", "")
                 .ToUpperInvariant();
         }
+
+        // OBTENER SIGUIENTE CORRELATIVO
 
         private static int ObtenerSiguienteCorrelativo(
             List<RegistroFactura> registros,

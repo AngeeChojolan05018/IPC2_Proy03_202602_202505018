@@ -1,10 +1,35 @@
-﻿@page
+@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Panel de control";
 }
-
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="page-heading">
+    <div><span class="eyebrow">ADMINISTRACIÓN TRIBUTARIA</span><h1>Panel de control</h1><p>Resumen de autorizaciones y facturas procesadas</p></div>
+    <span class="status-pill">● Datos de la API</span>
 </div>
+@if (Model.ErrorConexion != null)
+{
+    <div class="alert alert-warning" role="alert">@Model.ErrorConexion</div>
+}
+<div class="stats-grid">
+    <article class="stat-card"><div class="stat-label">Solicitudes procesadas</div><div class="stat-value">@Model.TotalFacturas</div><div class="stat-foot">Total histórico</div></article>
+    <article class="stat-card"><div class="stat-label">Facturas aprobadas</div><div class="stat-value good">@Model.FacturasAprobadas</div><div class="stat-foot">Autorizaciones válidas</div></article>
+    <article class="stat-card"><div class="stat-label">Facturas rechazadas</div><div class="stat-value bad">@Model.FacturasRechazadas</div><div class="stat-foot">Solicitudes no autorizadas</div></article>
+    <article class="stat-card"><div class="stat-label">Monto autorizado</div><div class="stat-value money">Q @Model.MontoTotalAprobado.ToString("N2")</div><div class="stat-foot">IVA aprobado: Q @Model.IvaTotalAprobado.ToString("N2")</div></article>
+</div>
+<div class="section-heading"><div><h2>Facturas aprobadas</h2><p>Autorizaciones registradas por el sistema</p></div><span class="counter">@Model.Aprobadas.Count registros</span></div>
+<div class="table-panel"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Referencia</th><th>NIT emisor</th><th>NIT receptor</th><th>Fecha</th><th>Total</th><th>Autorización</th></tr></thead><tbody>
+@foreach (var f in Model.Aprobadas)
+{
+<tr><td><strong>@f.Referencia</strong></td><td>@f.Emisor</td><td>@f.Receptor</td><td>@f.Fecha</td><td>Q @f.Total.ToString("N2")</td><td><span class="code-text">@f.Codigo</span></td></tr>
+}
+@if (Model.Aprobadas.Count == 0) { <tr><td colspan="6" class="empty-cell">No hay facturas aprobadas para mostrar.</td></tr> }
+</tbody></table></div></div>
+<div class="section-heading second-section"><div><h2>Facturas rechazadas</h2><p>Solicitudes que no superaron las validaciones</p></div><span class="counter">@Model.Rechazadas.Count registros</span></div>
+<div class="table-panel"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Referencia</th><th>NIT emisor</th><th>NIT receptor</th><th>Total solicitado</th><th>Motivo de rechazo</th></tr></thead><tbody>
+@foreach (var f in Model.Rechazadas)
+{
+<tr><td><strong>@f.Referencia</strong></td><td>@f.Emisor</td><td>@f.Receptor</td><td>Q @f.Total.ToString("N2")</td><td><span class="rejected">@f.Motivo</span></td></tr>
+}
+@if (Model.Rechazadas.Count == 0) { <tr><td colspan="5" class="empty-cell">No hay facturas rechazadas para mostrar.</td></tr> }
+</tbody></table></div></div>
