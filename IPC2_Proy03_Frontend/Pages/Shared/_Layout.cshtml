@@ -1,38 +1,92 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>@ViewData["Title"] - Sistema de Facturación</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
 </head>
+
 <body>
-<div class="app-shell">
-    <aside class="sidebar">
-        <a asp-page="/Index" class="brand"><span class="brand-icon">F</span><span>Factura<span class="brand-accent">GT</span><small>SISTEMA TRIBUTARIO</small></span></a>
-        <div class="menu-label">GENERAL</div>
-        <a asp-page="/Index" class="menu-link active"><span>▦</span> Panel de control</a>
-        <div class="sidebar-note">Proyecto 3 · IPC2<br />Panel conectado a la API</div>
-            <a asp-page="/RTU" class="nav-link">
+    @{
+        string paginaActual =
+            ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+    }
+
+    <div class="app-shell">
+
+        <aside class="sidebar">
+
+            <a asp-page="/Index" class="brand">
+                <span class="brand-icon">F</span>
+
+                <span>
+                    Factura<span class="brand-accent">GT</span>
+                    <small>SISTEMA TRIBUTARIO</small>
+                </span>
+            </a>
+
+            <div class="menu-label">GENERAL</div>
+
+            <a asp-page="/Index"
+               class="menu-link @(paginaActual == "/Index" ? "active" : "")">
+                <span>▦</span> Panel de control
+            </a>
+
+            <a asp-page="/RTU"
+               class="menu-link @(paginaActual == "/RTU" ? "active" : "")">
                 <span>▣</span> Gestión de RTU
             </a>
 
-            <a asp-page="/Facturas" class="nav-link">
+            <a asp-page="/Facturas"
+               class="menu-link @(paginaActual == "/Facturas" ? "active" : "")">
                 <span>▤</span> Autorización de facturas
             </a>
 
-            <a asp-page="/Consultas" class="nav-link">
+            <a asp-page="/Consultas"
+               class="menu-link @(paginaActual == "/Consultas" ? "active" : "")">
                 <span>⌕</span> Consultas de facturas
             </a>
 
-    </aside>
-    <div class="main-column">
-        <header class="topbar"><span>Sistema de autorización de facturas</span><span class="topbar-right">Guatemala · 2026</span></header>
-        <main class="content">@RenderBody()</main>
+            <a asp-page="/Reportes"
+               class="menu-link @(paginaActual == "/Reportes" ? "active" : "")">
+                <span>▥</span> Reportes
+            </a>
+
+            <div class="sidebar-note">
+                Proyecto 3 · IPC2
+                <br />
+                Panel conectado a la API
+            </div>
+
+        </aside>
+
+        <div class="main-column">
+
+            <header class="topbar">
+                <span>Sistema de autorización de facturas</span>
+                <span class="topbar-right">Guatemala · 2026</span>
+            </header>
+
+            <main class="content">
+                @RenderBody()
+            </main>
+
+        </div>
+
     </div>
-</div>
-<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-@await RenderSectionAsync("Scripts", required: false)
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

@@ -1,0 +1,528 @@
+﻿@page
+@model IPC2_Proy03_Frontend.Pages.ReportesModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Reportes";
+}
+
+<style>
+    .reporte-titulo {
+        font-weight: 700;
+        color: #10213c;
+    }
+
+    .reporte-tarjeta {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 22px;
+        margin-bottom: 20px;
+    }
+
+    .reporte-tabla {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .reporte-tabla th {
+            background: #f1f5f9;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #cbd5e1;
+        }
+
+        .reporte-tabla td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .reporte-tabla tr:hover {
+            background: #f8fafc;
+        }
+
+    .reporte-resumen {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+    }
+
+    .reporte-indicador {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 15px;
+    }
+
+        .reporte-indicador small {
+            display: block;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .reporte-indicador strong {
+            font-size: 20px;
+            color: #10213c;
+        }
+
+    .reporte-grafica {
+        height: 310px;
+        position: relative;
+    }
+
+    .reporte-tabla-contenedor {
+        overflow-x: auto;
+    }
+
+    @@media print {
+        .sidebar,
+        .topbar,
+        .reporte-filtros,
+        .reporte-acciones,
+        .reporte-mensaje {
+            display: none !important;
+        }
+
+        .app-shell,
+        .main-column,
+        .content {
+            display: block !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        body {
+            background: white !important;
+        }
+
+        .reporte-tarjeta {
+            break-inside: avoid;
+            box-shadow: none !important;
+        }
+    }
+</style>
+
+<div class="container-fluid py-4">
+
+    <div class="mb-4">
+        <h2 class="reporte-titulo">Reportes del sistema</h2>
+        <p class="text-muted">
+            Estadísticas de facturas, contribuyentes y errores.
+        </p>
+    </div>
+
+    <div class="reporte-tarjeta reporte-filtros">
+
+        <h5>Generar reporte</h5>
+
+        <form method="get">
+
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label class="form-label">Tipo de reporte</label>
+
+                    <select name="Tipo"
+                            id="tipoReporte"
+                            class="form-select">
+
+                        <option value="fechas"
+                                selected="@(Model.Tipo == "fechas")">
+                            Reporte por fechas
+                        </option>
+
+                        <option value="contribuyente"
+                                selected="@(Model.Tipo == "contribuyente")">
+                            Reporte por contribuyente
+                        </option>
+
+                        <option value="errores"
+                                selected="@(Model.Tipo == "errores")">
+                            Reporte de errores
+                        </option>
+
+                    </select>
+                </div>
+
+                <div class="col-md-6" id="campoNit">
+                    <label class="form-label">NIT</label>
+
+                    <input type="text"
+                           name="Nit"
+                           class="form-control"
+                           value="@Model.Nit"
+                           placeholder="7378106" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Fecha inicial</label>
+
+                    <input type="date"
+                           name="Inicio"
+                           class="form-control"
+                           value="@Model.Inicio.ToString("yyyy-MM-dd")"
+                           required />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Fecha final</label>
+
+                    <input type="date"
+                           name="Fin"
+                           class="form-control"
+                           value="@Model.Fin.ToString("yyyy-MM-dd")"
+                           required />
+                </div>
+
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-3">
+                Generar reporte
+            </button>
+
+        </form>
+
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+    {
+        <div class="alert @(string.IsNullOrWhiteSpace(Model.ResultadoJson) ? "alert-danger" : "alert-success") reporte-mensaje">
+            @Model.Mensaje
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.ResultadoJson))
+    {
+        <div class="reporte-acciones mb-3">
+            <button type="button"
+                    class="btn btn-success"
+                    onclick="window.print()">
+                Exportar a PDF
+            </button>
+        </div>
+
+        <div class="reporte-tarjeta">
+
+            <h5>Resumen general</h5>
+
+            <p class="text-muted">
+                Período:
+                @Model.Inicio.ToString("dd/MM/yyyy")
+                -
+                @Model.Fin.ToString("dd/MM/yyyy")
+            </p>
+
+            <div id="resumenReporte"
+                 class="reporte-resumen">
+            </div>
+
+        </div>
+
+        <div class="reporte-tarjeta">
+
+            <h5>Gráfica de resultados</h5>
+
+            <div class="reporte-grafica">
+                <canvas id="graficaReporte"></canvas>
+            </div>
+
+        </div>
+
+        <div class="reporte-tarjeta">
+
+            <h5>Detalle del reporte</h5>
+
+            <div id="detalleReporte"
+                 class="reporte-tabla-contenedor">
+            </div>
+
+        </div>
+    }
+
+</div>
+
+@section Scripts
+{
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const selector = document.getElementById("tipoReporte");
+        const campoNit = document.getElementById("campoNit");
+
+        function actualizarNit() {
+            campoNit.style.display =
+                selector.value === "contribuyente"
+                    ? "block"
+                    : "none";
+        }
+
+        selector.addEventListener("change", actualizarNit);
+        actualizarNit();
+    </script>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ResultadoJson))
+    {
+        <script>
+            const datos = @Html.Raw(Model.ResultadoJson);
+
+            const tipo = @Html.Raw(
+                        JsonSerializer.Serialize(Model.Tipo));
+
+            const resumen = document.getElementById("resumenReporte");
+            const detalle = document.getElementById("detalleReporte");
+
+            const moneda = valor =>
+                "Q " + Number(valor ?? 0).toLocaleString(
+                    "es-GT",
+                    {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }
+                );
+
+            function indicador(nombre, valor) {
+                const tarjeta = document.createElement("div");
+                tarjeta.className = "reporte-indicador";
+
+                const titulo = document.createElement("small");
+                titulo.textContent = nombre;
+
+                const cantidad = document.createElement("strong");
+                cantidad.textContent = valor;
+
+                tarjeta.append(titulo, cantidad);
+                resumen.appendChild(tarjeta);
+            }
+
+            function crearTabla(titulos, filas) {
+
+                const tabla = document.createElement("table");
+                tabla.className = "reporte-tabla";
+
+                const encabezado = document.createElement("thead");
+                const filaEncabezado = document.createElement("tr");
+
+                titulos.forEach(titulo => {
+                    const th = document.createElement("th");
+                    th.textContent = titulo;
+                    filaEncabezado.appendChild(th);
+                });
+
+                encabezado.appendChild(filaEncabezado);
+                tabla.appendChild(encabezado);
+
+                const cuerpo = document.createElement("tbody");
+
+                filas.forEach(fila => {
+
+                    const tr = document.createElement("tr");
+
+                    fila.forEach(valor => {
+                        const td = document.createElement("td");
+                        td.textContent = valor ?? "";
+                        tr.appendChild(td);
+                    });
+
+                    cuerpo.appendChild(tr);
+                });
+
+                tabla.appendChild(cuerpo);
+                return tabla;
+            }
+
+            function agregarSeccion(titulo, titulos, filas) {
+
+                const encabezado = document.createElement("h6");
+                encabezado.className = "mt-3 mb-3";
+                encabezado.textContent = titulo;
+
+                detalle.appendChild(encabezado);
+
+                if (filas.length === 0) {
+                    const mensaje = document.createElement("p");
+                    mensaje.className = "text-muted";
+                    mensaje.textContent = "No hay registros para mostrar.";
+                    detalle.appendChild(mensaje);
+                    return;
+                }
+
+                detalle.appendChild(crearTabla(titulos, filas));
+            }
+
+            function filasFacturas(registros) {
+                return registros.map(registro => {
+
+                    const factura = registro.solicitud ?? {};
+
+                    return [
+                        factura.REFERENCIA ?? "",
+                        factura.NIT_EMISOR ?? "",
+                        factura.NIT_RECEPTOR ?? "",
+                        factura.TIEMPO ?? "",
+                        moneda(factura.VALOR),
+                        moneda(factura.IVA),
+                        moneda(factura.TOTAL),
+                        registro.codigoAprobacion ?? ""
+                    ];
+                });
+            }
+
+            let etiquetas = [];
+            let valores = [];
+
+            if (tipo === "fechas") {
+
+                indicador("Procesadas", datos.totalProcesadas);
+                indicador("Aprobadas", datos.aprobadas);
+                indicador("Rechazadas", datos.rechazadas);
+                indicador("Monto sin IVA", moneda(datos.montoSinIva));
+                indicador("IVA", moneda(datos.iva));
+                indicador("Monto total", moneda(datos.montoConIva));
+
+                etiquetas = ["Aprobadas", "Rechazadas"];
+                valores = [datos.aprobadas ?? 0, datos.rechazadas ?? 0];
+
+                const filas = (datos.detallePorDia ?? []).map(dia => [
+                    dia.fecha,
+                    dia.aprobadas,
+                    dia.rechazadas,
+                    moneda(dia.montoSinIva),
+                    moneda(dia.iva),
+                    moneda(dia.montoConIva)
+                ]);
+
+                agregarSeccion(
+                    "Resumen por día",
+                    [
+                        "Fecha",
+                        "Aprobadas",
+                        "Rechazadas",
+                        "Sin IVA",
+                        "IVA",
+                        "Total"
+                    ],
+                    filas
+                );
+
+            } else if (tipo === "contribuyente") {
+
+                indicador("NIT", datos.nit);
+                indicador("Emitidas", datos.cantidadEmitidas);
+                indicador("Recibidas", datos.cantidadRecibidas);
+                indicador("Monto emitido", moneda(datos.montoEmitido));
+                indicador("Monto recibido", moneda(datos.montoRecibido));
+                indicador("IVA emitido", moneda(datos.ivaEmitido));
+                indicador("IVA recibido", moneda(datos.ivaRecibido));
+                indicador("Diferencia IVA", moneda(datos.diferenciaIva));
+
+                etiquetas = ["Emitidas", "Recibidas"];
+
+                valores = [
+                    datos.cantidadEmitidas ?? 0,
+                    datos.cantidadRecibidas ?? 0
+                ];
+
+                const titulos = [
+                    "Referencia",
+                    "NIT emisor",
+                    "NIT receptor",
+                    "Fecha",
+                    "Valor",
+                    "IVA",
+                    "Total",
+                    "Autorización"
+                ];
+
+                agregarSeccion(
+                    "Facturas emitidas",
+                    titulos,
+                    filasFacturas(datos.facturasEmitidas ?? [])
+                );
+
+                agregarSeccion(
+                    "Facturas recibidas",
+                    titulos,
+                    filasFacturas(datos.facturasRecibidas ?? [])
+                );
+
+            } else if (tipo === "errores") {
+
+                indicador("Procesadas", datos.totalProcesadas);
+                indicador("Aprobadas", datos.aprobadas);
+                indicador("Rechazadas", datos.rechazadas);
+                indicador("Sin errores", datos.sinErrores);
+                indicador("Emisores distintos", datos.emisoresDistintos);
+                indicador("Receptores distintos", datos.receptoresDistintos);
+
+                const errores = datos.errores ?? {};
+
+                const nombres = {
+                    nitEmisorInvalido: "NIT emisor inválido",
+                    nitReceptorInvalido: "NIT receptor inválido",
+                    nitEmisorInexistente: "Emisor inexistente",
+                    nitReceptorInexistente: "Receptor inexistente",
+                    ivaMalCalculado: "IVA incorrecto",
+                    totalMalCalculado: "Total incorrecto",
+                    referenciaDuplicada: "Referencia duplicada",
+                    referenciaInvalida: "Referencia inválida",
+                    fechaInvalida: "Fecha inválida",
+                    valorInvalido: "Valor inválido"
+                };
+
+                const filas = Object.entries(errores).map(
+                    ([clave, cantidad]) => [
+                        nombres[clave] ?? clave,
+                        cantidad
+                    ]
+                );
+
+                etiquetas = filas.map(fila => fila[0]);
+                valores = filas.map(fila => fila[1]);
+
+                agregarSeccion(
+                    "Errores detectados",
+                    ["Tipo de error", "Cantidad"],
+                    filas
+                );
+            }
+
+            const lienzo = document.getElementById("graficaReporte");
+
+            if (typeof Chart !== "undefined") {
+
+                new Chart(lienzo, {
+                    type: "bar",
+                    data: {
+                        labels: etiquetas,
+                        datasets: [{
+                            label: "Cantidad",
+                            data: valores,
+                            backgroundColor: "#2563eb",
+                            borderRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: tipo === "errores" ? "y" : "x",
+                        scales: {
+                            x: {
+                                beginAtZero: true
+                            },
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+        </script>
+    }
+}
