@@ -214,5 +214,248 @@
       "valorInvalido": false
     },
     "motivoRechazo": "La fecha de emisi\u00F3n es inv\u00E1lida."
+  },
+  {
+    "solicitud": {
+      "TIEMPO": "Guatemala, 20/10/2026 12:00 hrs.",
+      "REFERENCIA": "A1990",
+      "NIT_EMISOR": "7378106",
+      "NIT_RECEPTOR": "8338817",
+      "VALOR": 100,
+      "IVA": 12,
+      "TOTAL": 112
+    },
+    "fechaEmision": "2026-10-20T12:00:00",
+    "aprobada": false,
+    "codigoAprobacion": 0,
+    "errores": {
+      "nitEmisorInvalido": false,
+      "nitReceptorInvalido": false,
+      "nitEmisorInexistente": false,
+      "nitReceptorInexistente": false,
+      "ivaMalCalculado": false,
+      "totalMalCalculado": false,
+      "referenciaDuplicada": true,
+      "referenciaInvalida": false,
+      "fechaInvalida": false,
+      "valorInvalido": false
+    },
+    "motivoRechazo": "La referencia ya fue utilizada."
+  },
+  {
+    "solicitud": {
+      "TIEMPO": "",
+      "REFERENCIA": "",
+      "NIT_EMISOR": "",
+      "NIT_RECEPTOR": "",
+      "VALOR": 0,
+      "IVA": 0,
+      "TOTAL": 0
+    },
+    "fechaEmision": "0001-01-01T00:00:00",
+    "aprobada": false,
+    "codigoAprobacion": 0,
+    "errores": {
+      "nitEmisorInvalido": false,
+      "nitReceptorInvalido": false,
+      "nitEmisorInexistente": false,
+      "nitReceptorInexistente": false,
+      "ivaMalCalculado": false,
+      "totalMalCalculado": false,
+      "referenciaDuplicada": false,
+      "referenciaInvalida": false,
+      "fechaInvalida": true,
+      "valorInvalido": false
+    },
+    "motivoRechazo": "La fecha de emisi\u00F3n es inv\u00E1lida."
+  },
+  {
+    "solicitud": {
+      "TIEMPO": "",
+      "REFERENCIA": "",
+      "NIT_EMISOR": "",
+      "NIT_RECEPTOR": "",
+      "VALOR": 0,
+      "IVA": 0,
+      "TOTAL": 0
+    },
+    "fechaEmision": "0001-01-01T00:00:00",
+    "aprobada": false,
+    "codigoAprobacion": 0,
+    "errores": {
+      "nitEmisorInvalido": false,
+      "nitReceptorInvalido": false,
+      "nitEmisorInexistente": false,
+      "nitReceptorInexistente": false,
+      "ivaMalCalculado": false,
+      "totalMalCalculado": false,
+      "referenciaDuplicada": false,
+      "referenciaInvalida": false,
+      "fechaInvalida": true,
+      "valorInvalido": false
+    },
+    "motivoRechazo": "La fecha de emisi\u00F3n es inv\u00E1lida."
+  },
+  {
+    "solicitud": {
+      "TIEMPO": "",
+      "REFERENCIA": "",
+      "NIT_EMISOR": "",
+      "NIT_RECEPTOR": "",
+      "VALOR": 0,
+      "IVA": 0,
+      "TOTAL": 0
+    },
+    "fechaEmision": "0001-01-01T00:00:00",
+    "aprobada": false,
+    "codigoAprobacion": 0,
+    "errores": {
+      "nitEmisorInvalido": false,
+      "nitReceptorInvalido": false,
+      "nitEmisorInexistente": false,
+      "nitReceptorInexistente": false,
+      "ivaMalCalculado": false,
+      "totalMalCalculado": false,
+      "referenciaDuplicada": false,
+      "referenciaInvalida": false,
+      "fechaInvalida": true,
+      "valorInvalido": false
+    },
+    "motivoRechazo": "La fecha de emisi\u00F3n es inv\u00E1lida."
+  },
+  {
+    "solicitud": {
+      "TIEMPO": "",
+      "REFERENCIA": "",
+      "NIT_EMISOR": "",
+      "NIT_RECEPTOR": "",
+      "VALOR": 0,
+      "IVA": 0,
+      "TOTAL": 0
+    },
+    "fechaEmision": "0001-01-01T00:00:00",
+    "aprobada": false,
+    "codigoAprobacion": 0,
+    "errores": {
+      "nitEmisorInvalido": false,
+      "nitReceptorInvalido": false,
+      "nitEmisorInexistente": false,
+      "nitReceptorInexistente": false,
+      "ivaMalCalculado": false,
+      "totalMalCalculado": false,
+      "referenciaDuplicada": false,
+      "referenciaInvalida": false,
+      "fechaInvalida": true,
+      "valorInvalido": false
+    },
+    "motivoRechazo": "La fecha de emisi\u00F3n es inv\u00E1lida."
+  },
+  {
+    "solicitud": {
+      "TIEMPO": "",
+      "REFERENCIA": "",
+      "NIT_EMISOR": "",
+      "NIT_RECEPTOR": "",
+      "VALOR": 0,
+      "IVA": 0,
+      "TOTAL": 0
+    },
+    "fechaEmision": "0001-01-01T00:00:00",
+    "aprobada": false,
+    "codigoAprobacion": 0,
+    "errores": {
+      "nitEmisorInvalido": false,
+      "nitReceptorInvalido": false,
+      "nitEmisorInexistente": false,
+      "nitReceptorInexistente": false,
+      "ivaMalCalculado": false,
+      "totalMalCalculado": false,
+      "referenciaDuplicada": false,
+      "referenciaInvalida": false,
+      "fechaInvalida": true,
+      "valorInvalido": false
+    },
+    "motivoRechazo": "La fecha de emisi\u00F3n es inv\u00E1lida."
+  },
+  {
+    "solicitud": {
+      "TIEMPO": "",
+      "REFERENCIA": "",
+      "NIT_EMISOR": "",
+      "NIT_RECEPTOR": "",
+      "VALOR": 0,
+      "IVA": 0,
+      "TOTAL": 0
+    },
+    "fechaEmision": "0001-01-01T00:00:00",
+    "aprobada": false,
+    "codigoAprobacion": 0,
+    "errores": {
+      "nitEmisorInvalido": false,
+      "nitReceptorInvalido": false,
+      "nitEmisorInexistente": false,
+      "nitReceptorInexistente": false,
+      "ivaMalCalculado": false,
+      "totalMalCalculado": false,
+      "referenciaDuplicada": false,
+      "referenciaInvalida": false,
+      "fechaInvalida": true,
+      "valorInvalido": false
+    },
+    "motivoRechazo": "La fecha de emisi\u00F3n es inv\u00E1lida."
+  },
+  {
+    "solicitud": {
+      "TIEMPO": "Guatemala, 21/10/2026 17:00 hrs.",
+      "REFERENCIA": "PRUEBA_CORRECCION_001",
+      "NIT_EMISOR": "7378106",
+      "NIT_RECEPTOR": "8338817",
+      "VALOR": 100,
+      "IVA": 12,
+      "TOTAL": 112
+    },
+    "fechaEmision": "2026-10-21T17:00:00",
+    "aprobada": true,
+    "codigoAprobacion": 2026102100000001,
+    "errores": {
+      "nitEmisorInvalido": false,
+      "nitReceptorInvalido": false,
+      "nitEmisorInexistente": false,
+      "nitReceptorInexistente": false,
+      "ivaMalCalculado": false,
+      "totalMalCalculado": false,
+      "referenciaDuplicada": false,
+      "referenciaInvalida": false,
+      "fechaInvalida": false,
+      "valorInvalido": false
+    },
+    "motivoRechazo": ""
+  },
+  {
+    "solicitud": {
+      "TIEMPO": "Guatemala, 21/10/2026 17:00 hrs.",
+      "REFERENCIA": "PRUEBA_CORRECCION_002",
+      "NIT_EMISOR": "7378106",
+      "NIT_RECEPTOR": "8338817",
+      "VALOR": 100,
+      "IVA": 12,
+      "TOTAL": 112
+    },
+    "fechaEmision": "2026-10-21T17:00:00",
+    "aprobada": true,
+    "codigoAprobacion": 2026102100000002,
+    "errores": {
+      "nitEmisorInvalido": false,
+      "nitReceptorInvalido": false,
+      "nitEmisorInexistente": false,
+      "nitReceptorInexistente": false,
+      "ivaMalCalculado": false,
+      "totalMalCalculado": false,
+      "referenciaDuplicada": false,
+      "referenciaInvalida": false,
+      "fechaInvalida": false,
+      "valorInvalido": false
+    },
+    "motivoRechazo": ""
   }
 ]
