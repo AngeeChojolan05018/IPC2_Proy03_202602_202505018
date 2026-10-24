@@ -10,6 +10,7 @@ namespace IPC2_Proy03_202602_202505018.Servicios
 {
     public class AutorizacionService
     {
+        private static readonly object bloqueoArchivo = new object();
         private readonly string rutaArchivo;
         private readonly RTUService servicioRTU;
         private readonly ValidadorNIT validador;
@@ -43,225 +44,263 @@ namespace IPC2_Proy03_202602_202505018.Servicios
         public RespuestaAutorizaciones Procesar(
             List<Factura> facturas)
         {
-            List<RegistroFactura> registros = ObtenerRegistros();
-
-            List<Contribuyente> contribuyentes =
-                servicioRTU.ObtenerContribuyentes();
-
-            RespuestaAutorizaciones respuesta =
-                new RespuestaAutorizaciones();
-
-            string fechaActual = DateTime.Now.ToString("yyyyMMdd");
-
-            foreach (Factura factura in facturas)
+            lock (bloqueoArchivo)
             {
-                RegistroFactura registro = new RegistroFactura
+                List<RegistroFactura> registros = ObtenerRegistros();
+
+                List<Contribuyente> contribuyentes =
+                    servicioRTU.ObtenerContribuyentes();
+
+                RespuestaAutorizaciones respuesta =
+                    new RespuestaAutorizaciones();
+
+                string fechaActual = DateTime.Now.ToString("yyyyMMdd");
+
+                foreach (Factura factura in facturas)
                 {
-                    Solicitud = factura
+                    RegistroFactura registro = new RegistroFactura
+                    {
+                        Solicitud = factura
+                    };
+
+                    // VALIDAR FECHA
+
+
+                    string tiempo = factura.TIEMPO ?? string.Empty;
+
+                    System.Text.RegularExpressions.Match coincidencia =
+                        System.Text.RegularExpressions.Regex.Match(
+                            tiempo,
+                            @"(?<!\d)\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}(?!\d)");
+
+                    string fechaTexto = coincidencia.Success
+                        ? coincidencia.Value
+                        : string.Empty;
+
+                    string[] formatos =
+                                    {
+                    "d/M/yyyy H:mm",
+                    "dd/MM/yyyy HH:mm",
+                    "d/MM/yyyy H:mm",
+                    "dd/M/yyyy HH:mm"
                 };
 
-                // VALIDAR FECHA
+                    if (DateTime.TryParseExact(
+                        fechaTexto,
+                        formatos,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out DateTime fechaEmision))
+                    {
+                        registro.FechaEmision = fechaEmision;
+                    }
+                    else
+                    {
+                        respuesta.Resultado.CantidadFacturasDescartadas++;
+                        registro.MotivoRechazo = "Fecha de emisión inválida.";
+                        registros.Add(registro);
+                        continue;
+                    }
 
-                string tiempo = factura.TIEMPO ?? string.Empty;
+                    // VALIDAR REFERENCIA
 
-                string fechaTexto = tiempo
-                    .Replace("Guatemala,", "")
-                    .Replace("hrs.", "")
-                    .Trim();
+                    string referencia =
+                        (factura.REFERENCIA ?? string.Empty).Trim();
 
-                if (DateTime.TryParseExact(
-                    fechaTexto,
-                    "dd/MM/yyyy HH:mm",
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out DateTime fechaEmision))
-                {
-                    registro.FechaEmision = fechaEmision;
-                }
-                else
-                {
-                    registro.Errores.FechaInvalida = true;
+                    factura.REFERENCIA = referencia;
 
-                    registro.MotivoRechazo =
-                        "La fecha de emisión es inválida.";
+                    if (referencia.Length == 0 ||
+                        referencia.Length > 40)
+                    {
+                        registro.Errores.ReferenciaInvalida = true;
+                        respuesta.Resultado.CantidadRechazadasPorReferenciaInvalida++;
 
-                    registros.Add(registro);
-                    continue;
-                }
+                        registro.MotivoRechazo =
+                            "La referencia debe tener entre 1 y 40 caracteres.";
 
-                // VALIDAR REFERENCIA
+                        registros.Add(registro);
+                        continue;
+                    }
 
-                string referencia =
-                    (factura.REFERENCIA ?? string.Empty).Trim();
+                    bool referenciaDuplicada = registros.Exists(
+                        r => r.Aprobada && string.Equals(
+                            r.Solicitud.REFERENCIA,
+                            referencia,
+                            StringComparison.OrdinalIgnoreCase));
 
-                factura.REFERENCIA = referencia;
+                    if (referenciaDuplicada)
+                    {
+                        registro.Errores.ReferenciaDuplicada = true;
+                        respuesta.Resultado.CantidadRechazadasPorReferenciaDuplicada++;
 
-                if (referencia.Length == 0 ||
-                    referencia.Length > 40)
-                {
-                    registro.Errores.ReferenciaInvalida = true;
+                        registro.MotivoRechazo =
+                            "La referencia ya fue utilizada.";
 
-                    registro.MotivoRechazo =
-                        "La referencia debe tener entre 1 y 40 caracteres.";
+                        registros.Add(registro);
+                        continue;
+                    }
 
-                    registros.Add(registro);
-                    continue;
-                }
 
-                bool referenciaDuplicada = registros.Exists(
-                    r => string.Equals(
-                        r.Solicitud.REFERENCIA,
-                        referencia,
-                        StringComparison.OrdinalIgnoreCase));
+                    // VALIDAR NIT
 
-                if (referenciaDuplicada)
-                {
-                    registro.Errores.ReferenciaDuplicada = true;
+                    string nitEmisor =
+                        NormalizarNit(factura.NIT_EMISOR);
 
-                    registro.MotivoRechazo =
-                        "La referencia ya fue utilizada.";
+                    string nitReceptor =
+                        NormalizarNit(factura.NIT_RECEPTOR);
 
-                    registros.Add(registro);
-                    continue;
-                }
+                    bool emisorValido =
+                        validador.EsValido(nitEmisor);
 
-                // VALIDAR NIT
+                    bool receptorValido =
+                        validador.EsValido(nitReceptor);
 
-                string nitEmisor =
-                    NormalizarNit(factura.NIT_EMISOR);
-
-                string nitReceptor =
-                    NormalizarNit(factura.NIT_RECEPTOR);
-
-                bool emisorValido =
-                    validador.EsValido(nitEmisor);
-
-                bool receptorValido =
-                    validador.EsValido(nitReceptor);
-
-                if (!emisorValido || !receptorValido)
-                {
                     registro.Errores.NitEmisorInvalido =
                         !emisorValido;
 
                     registro.Errores.NitReceptorInvalido =
                         !receptorValido;
 
-                    registro.MotivoRechazo = "NIT inválido.";
+                    // COMPROBAR EXISTENCIA EN RTU
 
-                    registros.Add(registro);
-                    continue;
-                }
-
-                // COMPROBAR EXISTENCIA EN RTU
-
-                bool emisorExiste = contribuyentes.Exists(
-                    c => NormalizarNit(c.NIT) == nitEmisor);
-
-                bool receptorExiste = contribuyentes.Exists(
-                    c => NormalizarNit(c.NIT) == nitReceptor);
-
-                if (!emisorExiste || !receptorExiste)
-                {
-                    if (!emisorExiste)
+                    if (emisorValido)
                     {
-                        registro.Errores.NitEmisorInexistente = true;
-
-                        respuesta.Resultado
-                            .CantidadRechazadasPorEmisorInexistente++;
+                        registro.Errores.NitEmisorInexistente =
+                            !contribuyentes.Exists(
+                                c => NormalizarNit(c.NIT) == nitEmisor);
                     }
 
-                    if (!receptorExiste)
+                    if (receptorValido)
                     {
-                        registro.Errores.NitReceptorInexistente = true;
-
-                        respuesta.Resultado
-                            .CantidadRechazadasPorReceptorInexistente++;
+                        registro.Errores.NitReceptorInexistente =
+                            !contribuyentes.Exists(
+                                c => NormalizarNit(c.NIT) == nitReceptor);
                     }
 
-                    registro.MotivoRechazo =
-                        "El emisor o el receptor no existe en el RTU.";
+                    // VALIDAR VALOR
 
-                    registros.Add(registro);
-                    continue;
-                }
+                    registro.Errores.ValorInvalido =
+                        factura.VALOR <= 0;
 
-                // VALIDAR VALOR
+                    // VALIDAR IVA Y TOTAL
 
-                if (factura.VALOR <= 0)
-                {
-                    registro.Errores.ValorInvalido = true;
+                    decimal ivaEsperado = decimal.Round(
+                        factura.VALOR * 0.12m,
+                        2,
+                        MidpointRounding.AwayFromZero);
 
-                    registro.MotivoRechazo =
-                        "El valor de la factura debe ser mayor que cero.";
+                    decimal totalEsperado =
+                        factura.VALOR + ivaEsperado;
 
-                    registros.Add(registro);
-                    continue;
-                }
-
-                // VALIDAR IVA Y TOTAL
-
-                decimal ivaEsperado = decimal.Round(
-                    factura.VALOR * 0.12m,
-                    2,
-                    MidpointRounding.AwayFromZero);
-
-                decimal totalEsperado =
-                    factura.VALOR + ivaEsperado;
-
-                bool ivaIncorrecto =
-                    factura.IVA != ivaEsperado;
-
-                bool totalIncorrecto =
-                    factura.TOTAL != totalEsperado;
-
-                if (ivaIncorrecto || totalIncorrecto)
-                {
                     registro.Errores.IvaMalCalculado =
-                        ivaIncorrecto;
+                        factura.IVA != ivaEsperado;
 
                     registro.Errores.TotalMalCalculado =
-                        totalIncorrecto;
+                        factura.TOTAL != totalEsperado;
 
-                    registro.MotivoRechazo =
-                        "El IVA o el total son incorrectos.";
+                    // ACTUALIZAR CONTADORES
+
+                    if (registro.Errores.NitEmisorInvalido)
+                        respuesta.Resultado.CantidadRechazadasPorEmisorInvalido++;
+
+                    if (registro.Errores.NitReceptorInvalido)
+                        respuesta.Resultado.CantidadRechazadasPorReceptorInvalido++;
+
+                    if (registro.Errores.NitEmisorInexistente)
+                        respuesta.Resultado.CantidadRechazadasPorEmisorInexistente++;
+
+                    if (registro.Errores.NitReceptorInexistente)
+                        respuesta.Resultado.CantidadRechazadasPorReceptorInexistente++;
+
+                    if (registro.Errores.ValorInvalido)
+                        respuesta.Resultado.CantidadRechazadasPorValorInvalido++;
+
+                    if (registro.Errores.IvaMalCalculado)
+                        respuesta.Resultado.CantidadRechazadasPorIvaIncorrecto++;
+
+                    if (registro.Errores.TotalMalCalculado)
+                        respuesta.Resultado.CantidadRechazadasPorTotalIncorrecto++;
+
+                    // COMPROBAR SI EXISTEN ERRORES
+
+                    bool tieneErrores =
+                        registro.Errores.NitEmisorInvalido ||
+                        registro.Errores.NitReceptorInvalido ||
+                        registro.Errores.NitEmisorInexistente ||
+                        registro.Errores.NitReceptorInexistente ||
+                        registro.Errores.ValorInvalido ||
+                        registro.Errores.IvaMalCalculado ||
+                        registro.Errores.TotalMalCalculado;
+
+                    if (tieneErrores)
+                    {
+                        if (registro.Errores.NitEmisorInvalido ||
+                            registro.Errores.NitReceptorInvalido)
+                        {
+                            registro.MotivoRechazo = "NIT inválido.";
+                        }
+                        else if (registro.Errores.NitEmisorInexistente ||
+                                 registro.Errores.NitReceptorInexistente)
+                        {
+                            registro.MotivoRechazo =
+                                "El emisor o el receptor no existe en el RTU.";
+                        }
+                        else if (registro.Errores.ValorInvalido)
+                        {
+                            registro.MotivoRechazo =
+                                "El valor de la factura debe ser mayor que cero.";
+                        }
+                        else
+                        {
+                            registro.MotivoRechazo =
+                                "El IVA o el total son incorrectos.";
+                        }
+
+                        registros.Add(registro);
+                        continue;
+                    }
+
+
+                    // GENERAR CODIGO DE APROBACION
+
+                    int correlativo = ObtenerSiguienteCorrelativo(
+                        registros,
+                        fechaActual);
+
+                    if (correlativo > 99999999)
+                    {
+                        registro.MotivoRechazo = "Se agotaron los correlativos del día.";
+                        registros.Add(registro);
+                        continue;
+                    }
+
+                    string codigoTexto = fechaActual +
+                        correlativo.ToString("D8");
+
+                    long codigo = long.Parse(
+                        codigoTexto,
+                        CultureInfo.InvariantCulture);
+
+                    registro.Aprobada = true;
+                    registro.CodigoAprobacion = codigo;
 
                     registros.Add(registro);
-                    continue;
+
+                    respuesta.Resultado
+                        .CantidadAutorizacionesAprobadas++;
+
+                    respuesta.Resultado.DetalleAprobaciones.Add(
+                        new DetalleAprobacion
+                        {
+                            Referencia = referencia,
+                            CodigoAprobacion = codigo
+                        });
                 }
 
-                // GENERAR CODIGO DE APROBACION
+                GuardarRegistros(registros);
 
-                int correlativo = ObtenerSiguienteCorrelativo(
-                    registros,
-                    fechaActual);
-
-                string codigoTexto = fechaActual +
-                    correlativo.ToString("D8");
-
-                long codigo = long.Parse(
-                    codigoTexto,
-                    CultureInfo.InvariantCulture);
-
-                registro.Aprobada = true;
-                registro.CodigoAprobacion = codigo;
-
-                registros.Add(registro);
-
-                respuesta.Resultado
-                    .CantidadAutorizacionesAprobadas++;
-
-                respuesta.Resultado.DetalleAprobaciones.Add(
-                    new DetalleAprobacion
-                    {
-                        Referencia = referencia,
-                        CodigoAprobacion = codigo
-                    });
+                return respuesta;
             }
-
-            GuardarRegistros(registros);
-
-            return respuesta;
         }
 
 
@@ -417,10 +456,12 @@ namespace IPC2_Proy03_202602_202505018.Servicios
 
         private List<RegistroFactura> ObtenerRegistros()
         {
-            string contenido = File.ReadAllText(rutaArchivo);
-
-            return JsonSerializer.Deserialize<List<RegistroFactura>>(
-                contenido) ?? new List<RegistroFactura>();
+            lock (bloqueoArchivo)
+            {
+                string contenido = File.ReadAllText(rutaArchivo);
+                return JsonSerializer.Deserialize<List<RegistroFactura>>(
+                    contenido) ?? new List<RegistroFactura>();
+            }
         }
 
         // GUARDAR ARCHIVO JSON
@@ -435,7 +476,10 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                     WriteIndented = true
                 });
 
-            File.WriteAllText(rutaArchivo, json);
+            lock (bloqueoArchivo)
+            {
+                File.WriteAllText(rutaArchivo, json);
+            }
         }
 
         // NORMALIZAR NIT

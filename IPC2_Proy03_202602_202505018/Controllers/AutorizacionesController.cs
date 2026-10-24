@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using IPC2_Proy03_202602_202505018.Modelos;
 using IPC2_Proy03_202602_202505018.Servicios;
@@ -21,12 +22,82 @@ namespace IPC2_Proy03_202602_202505018.Controllers
 
         [HttpPost]
         public ActionResult<RespuestaAutorizaciones> Procesar(
-            [FromBody] List<Factura> facturas)
+            [FromBody] JsonElement contenido)
         {
+            if (contenido.ValueKind != JsonValueKind.Array)
+            {
+                return BadRequest(new
+                {
+                    error = "Debe enviar un arreglo JSON de facturas."
+                });
+            }
+
+            if (contenido.GetArrayLength() == 0)
+            {
+                return BadRequest(new
+                {
+                    error = "El arreglo de facturas esta vacio."
+                });
+            }
+
+            string[] camposObligatorios =
+            {
+                "TIEMPO",
+                "REFERENCIA",
+                "NIT_EMISOR",
+                "NIT_RECEPTOR",
+                "VALOR",
+                "IVA",
+                "TOTAL"
+            };
+
+            foreach (JsonElement elemento in contenido.EnumerateArray())
+            {
+                if (elemento.ValueKind != JsonValueKind.Object)
+                {
+                    return BadRequest(new
+                    {
+                        error = "Cada factura debe ser un objeto JSON."
+                    });
+                }
+
+                foreach (string campo in camposObligatorios)
+                {
+                    if (!elemento.TryGetProperty(campo, out _))
+                    {
+                        return BadRequest(new
+                        {
+                            error = "Falta el campo obligatorio: " + campo
+                        });
+                    }
+                }
+            }
+
+            List<Factura>? facturas;
+
+            try
+            {
+                facturas = JsonSerializer.Deserialize<List<Factura>>(
+                    contenido.GetRawText(),
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+            }
+            catch (JsonException)
+            {
+                return BadRequest(new
+                {
+                    error = "El contenido de las facturas no es valido."
+                });
+            }
+
             if (facturas == null || facturas.Count == 0)
             {
-                return BadRequest(
-                    "Debe enviar al menos una factura.");
+                return BadRequest(new
+                {
+                    error = "Debe enviar al menos una factura."
+                });
             }
 
             return Ok(servicio.Procesar(facturas));
@@ -62,7 +133,10 @@ namespace IPC2_Proy03_202602_202505018.Controllers
         {
             if (fecha == DateTime.MinValue)
             {
-                return BadRequest("Debe ingresar una fecha valida.");
+                return BadRequest(new
+                {
+                    error = "Debe ingresar una fecha valida."
+                });
             }
 
             return Ok(servicio.BuscarPorFecha(fecha));
@@ -77,8 +151,10 @@ namespace IPC2_Proy03_202602_202505018.Controllers
 
             if (factura == null)
             {
-                return NotFound(
-                    "No se encontro una factura aprobada con esa referencia.");
+                return NotFound(new
+                {
+                    error = "No se encontro una factura aprobada con esa referencia."
+                });
             }
 
             return Ok(factura);

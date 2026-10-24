@@ -1,9 +1,10 @@
-﻿@page
+﻿
+@page
 @model IPC2_Proy03_Frontend.Pages.ReportesModel
 @using System.Text.Json
 
 @{
-    ViewData["Title"] = "Reportes";
+    ViewData["Title"] = "Reportes y peticiones";
 }
 
 <style>
@@ -20,27 +21,27 @@
         margin-bottom: 20px;
     }
 
+    .reporte-tabla-contenedor {
+        overflow-x: auto;
+    }
+
     .reporte-tabla {
         width: 100%;
         border-collapse: collapse;
         font-size: 13px;
     }
 
-        .reporte-tabla th {
-            background: #f1f5f9;
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #cbd5e1;
-        }
+    .reporte-tabla th {
+        background: #f1f5f9;
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #cbd5e1;
+    }
 
-        .reporte-tabla td {
-            padding: 12px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .reporte-tabla tr:hover {
-            background: #f8fafc;
-        }
+    .reporte-tabla td {
+        padding: 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
 
     .reporte-resumen {
         display: grid;
@@ -55,24 +56,20 @@
         padding: 15px;
     }
 
-        .reporte-indicador small {
-            display: block;
-            color: #64748b;
-            margin-bottom: 8px;
-        }
+    .reporte-indicador small {
+        display: block;
+        color: #64748b;
+        margin-bottom: 8px;
+    }
 
-        .reporte-indicador strong {
-            font-size: 20px;
-            color: #10213c;
-        }
+    .reporte-indicador strong {
+        font-size: 19px;
+        color: #10213c;
+    }
 
     .reporte-grafica {
         height: 310px;
         position: relative;
-    }
-
-    .reporte-tabla-contenedor {
-        overflow-x: auto;
     }
 
     @@media print {
@@ -93,13 +90,8 @@
             padding: 0 !important;
         }
 
-        body {
-            background: white !important;
-        }
-
         .reporte-tarjeta {
             break-inside: avoid;
-            box-shadow: none !important;
         }
     }
 </style>
@@ -107,35 +99,50 @@
 <div class="container-fluid py-4">
 
     <div class="mb-4">
-        <h2 class="reporte-titulo">Reportes del sistema</h2>
+        <h2 class="reporte-titulo">Reportes y peticiones</h2>
         <p class="text-muted">
-            Estadísticas de facturas, contribuyentes y errores.
+            Consultas tributarias, resúmenes y estadísticas.
         </p>
     </div>
 
     <div class="reporte-tarjeta reporte-filtros">
 
-        <h5>Generar reporte</h5>
+        <h5>Generar consulta</h5>
 
         <form method="get">
 
             <div class="row g-3">
 
                 <div class="col-md-6">
-                    <label class="form-label">Tipo de reporte</label>
+                    <label class="form-label">Tipo de consulta</label>
 
                     <select name="Tipo"
                             id="tipoReporte"
                             class="form-select">
 
+                        <option value="consulta"
+                                selected="@(Model.Tipo == "consulta")">
+                            Consultar contribuyente
+                        </option>
+
+                        <option value="iva"
+                                selected="@(Model.Tipo == "iva")">
+                            Resumen de IVA por fecha y NIT
+                        </option>
+
+                        <option value="rango"
+                                selected="@(Model.Tipo == "rango")">
+                            Resumen por rango de fechas
+                        </option>
+
                         <option value="fechas"
                                 selected="@(Model.Tipo == "fechas")">
-                            Reporte por fechas
+                            Reporte general por fechas
                         </option>
 
                         <option value="contribuyente"
                                 selected="@(Model.Tipo == "contribuyente")">
-                            Reporte por contribuyente
+                            Reporte detallado por contribuyente
                         </option>
 
                         <option value="errores"
@@ -148,7 +155,6 @@
 
                 <div class="col-md-6" id="campoNit">
                     <label class="form-label">NIT</label>
-
                     <input type="text"
                            name="Nit"
                            class="form-control"
@@ -156,24 +162,56 @@
                            placeholder="7378106" />
                 </div>
 
-                <div class="col-md-6">
-                    <label class="form-label">Fecha inicial</label>
+                <div class="col-md-6" id="campoMovimiento">
+                    <label class="form-label">Tipo de movimiento</label>
+                    <select name="Movimiento" class="form-select">
+                        <option value="emitidas"
+                                selected="@(Model.Movimiento == "emitidas")">
+                            Facturas emitidas
+                        </option>
+                        <option value="recibidas"
+                                selected="@(Model.Movimiento == "recibidas")">
+                            Facturas recibidas
+                        </option>
+                    </select>
+                </div>
 
+                <div class="col-md-6" id="campoMonto">
+                    <label class="form-label">Mostrar valores</label>
+                    <select name="Monto" class="form-select">
+                        <option value="coniva"
+                                selected="@(Model.Monto == "coniva")">
+                            Con IVA
+                        </option>
+                        <option value="siniva"
+                                selected="@(Model.Monto == "siniva")">
+                            Sin IVA
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-6" id="campoFecha">
+                    <label class="form-label">Fecha</label>
+                    <input type="date"
+                           name="Fecha"
+                           class="form-control"
+                           value="@Model.Fecha.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <div class="col-md-6" id="campoInicio">
+                    <label class="form-label">Fecha inicial</label>
                     <input type="date"
                            name="Inicio"
                            class="form-control"
-                           value="@Model.Inicio.ToString("yyyy-MM-dd")"
-                           required />
+                           value="@Model.Inicio.ToString("yyyy-MM-dd")" />
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" id="campoFin">
                     <label class="form-label">Fecha final</label>
-
                     <input type="date"
                            name="Fin"
                            class="form-control"
-                           value="@Model.Fin.ToString("yyyy-MM-dd")"
-                           required />
+                           value="@Model.Fin.ToString("yyyy-MM-dd")" />
                 </div>
 
             </div>
@@ -183,7 +221,6 @@
             </button>
 
         </form>
-
     </div>
 
     @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
@@ -204,71 +241,66 @@
         </div>
 
         <div class="reporte-tarjeta">
-
             <h5>Resumen general</h5>
-
-            <p class="text-muted">
-                Período:
-                @Model.Inicio.ToString("dd/MM/yyyy")
-                -
-                @Model.Fin.ToString("dd/MM/yyyy")
-            </p>
-
-            <div id="resumenReporte"
-                 class="reporte-resumen">
-            </div>
-
+            <div id="resumenReporte" class="reporte-resumen"></div>
         </div>
 
         <div class="reporte-tarjeta">
-
             <h5>Gráfica de resultados</h5>
-
             <div class="reporte-grafica">
                 <canvas id="graficaReporte"></canvas>
             </div>
-
         </div>
 
         <div class="reporte-tarjeta">
-
             <h5>Detalle del reporte</h5>
-
             <div id="detalleReporte"
-                 class="reporte-tabla-contenedor">
-            </div>
-
+                 class="reporte-tabla-contenedor"></div>
         </div>
     }
-
 </div>
 
-@section Scripts
-{
+@section Scripts {
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         const selector = document.getElementById("tipoReporte");
-        const campoNit = document.getElementById("campoNit");
 
-        function actualizarNit() {
-            campoNit.style.display =
-                selector.value === "contribuyente"
-                    ? "block"
-                    : "none";
+        function actualizarCampos() {
+            const tipo = selector.value;
+
+            document.getElementById("campoNit").style.display =
+                ["consulta", "contribuyente"].includes(tipo)
+                    ? "block" : "none";
+
+            document.getElementById("campoMovimiento").style.display =
+                tipo === "consulta" ? "block" : "none";
+
+            document.getElementById("campoMonto").style.display =
+                tipo === "rango" ? "block" : "none";
+
+            document.getElementById("campoFecha").style.display =
+                tipo === "iva" ? "block" : "none";
+
+            document.getElementById("campoInicio").style.display =
+                tipo === "iva" ? "none" : "block";
+
+            document.getElementById("campoFin").style.display =
+                tipo === "iva" ? "none" : "block";
         }
 
-        selector.addEventListener("change", actualizarNit);
-        actualizarNit();
+        selector.addEventListener("change", actualizarCampos);
+        actualizarCampos();
     </script>
 
     @if (!string.IsNullOrWhiteSpace(Model.ResultadoJson))
     {
         <script>
             const datos = @Html.Raw(Model.ResultadoJson);
-
-            const tipo = @Html.Raw(
-                        JsonSerializer.Serialize(Model.Tipo));
+            const tipo = @Html.Raw(JsonSerializer.Serialize(Model.Tipo));
+            const movimiento = @Html.Raw(JsonSerializer.Serialize(Model.Movimiento));
+            const monto = @Html.Raw(JsonSerializer.Serialize(Model.Monto));
 
             const resumen = document.getElementById("resumenReporte");
             const detalle = document.getElementById("detalleReporte");
@@ -279,8 +311,7 @@
                     {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
-                    }
-                );
+                    });
 
             function indicador(nombre, valor) {
                 const tarjeta = document.createElement("div");
@@ -297,82 +328,182 @@
             }
 
             function crearTabla(titulos, filas) {
-
                 const tabla = document.createElement("table");
                 tabla.className = "reporte-tabla";
 
-                const encabezado = document.createElement("thead");
-                const filaEncabezado = document.createElement("tr");
+                const thead = document.createElement("thead");
+                const tr = document.createElement("tr");
 
                 titulos.forEach(titulo => {
                     const th = document.createElement("th");
                     th.textContent = titulo;
-                    filaEncabezado.appendChild(th);
+                    tr.appendChild(th);
                 });
 
-                encabezado.appendChild(filaEncabezado);
-                tabla.appendChild(encabezado);
+                thead.appendChild(tr);
+                tabla.appendChild(thead);
 
-                const cuerpo = document.createElement("tbody");
+                const tbody = document.createElement("tbody");
 
                 filas.forEach(fila => {
-
-                    const tr = document.createElement("tr");
+                    const filaHtml = document.createElement("tr");
 
                     fila.forEach(valor => {
                         const td = document.createElement("td");
                         td.textContent = valor ?? "";
-                        tr.appendChild(td);
+                        filaHtml.appendChild(td);
                     });
 
-                    cuerpo.appendChild(tr);
+                    tbody.appendChild(filaHtml);
                 });
 
-                tabla.appendChild(cuerpo);
+                tabla.appendChild(tbody);
                 return tabla;
             }
 
             function agregarSeccion(titulo, titulos, filas) {
-
-                const encabezado = document.createElement("h6");
-                encabezado.className = "mt-3 mb-3";
-                encabezado.textContent = titulo;
-
-                detalle.appendChild(encabezado);
+                const h6 = document.createElement("h6");
+                h6.className = "mt-3 mb-3";
+                h6.textContent = titulo;
+                detalle.appendChild(h6);
 
                 if (filas.length === 0) {
-                    const mensaje = document.createElement("p");
-                    mensaje.className = "text-muted";
-                    mensaje.textContent = "No hay registros para mostrar.";
-                    detalle.appendChild(mensaje);
+                    const p = document.createElement("p");
+                    p.className = "text-muted";
+                    p.textContent = "No hay registros para mostrar.";
+                    detalle.appendChild(p);
                     return;
                 }
 
                 detalle.appendChild(crearTabla(titulos, filas));
             }
 
-            function filasFacturas(registros) {
-                return registros.map(registro => {
-
-                    const factura = registro.solicitud ?? {};
-
-                    return [
-                        factura.REFERENCIA ?? "",
-                        factura.NIT_EMISOR ?? "",
-                        factura.NIT_RECEPTOR ?? "",
-                        factura.TIEMPO ?? "",
-                        moneda(factura.VALOR),
-                        moneda(factura.IVA),
-                        moneda(factura.TOTAL),
-                        registro.codigoAprobacion ?? ""
-                    ];
-                });
-            }
-
+            
             let etiquetas = [];
             let valores = [];
+            let valoresRecibidos = [];
+            let tituloGrafica = "Cantidad";
 
-            if (tipo === "fechas") {
+
+            if (tipo === "iva") {
+
+                const filas = datos.detalle ?? [];
+
+                indicador("Fecha", datos.fecha);
+                indicador("Contribuyentes", filas.length);
+
+                const totalEmitido = filas.reduce(
+                    (suma, fila) => suma + fila.ivaEmitido, 0);
+
+                const totalRecibido = filas.reduce(
+                    (suma, fila) => suma + fila.ivaRecibido, 0);
+
+                indicador("IVA emitido", moneda(totalEmitido));
+                indicador("IVA recibido", moneda(totalRecibido));
+
+                
+                etiquetas = filas.map(fila => fila.nit);
+                valores = filas.map(fila => fila.ivaEmitido);
+                valoresRecibidos = filas.map(fila => fila.ivaRecibido);
+                tituloGrafica = "IVA emitido (Q)";
+
+                agregarSeccion(
+                    "IVA emitido y recibido por NIT",
+                    ["NIT", "IVA emitido", "IVA recibido"],
+                    filas.map(fila => [
+                        fila.nit,
+                        moneda(fila.ivaEmitido),
+                        moneda(fila.ivaRecibido)
+                    ])
+                );
+
+            } else if (tipo === "rango") {
+
+                const sinIva = monto === "siniva";
+
+                indicador("Aprobadas", datos.aprobadas);
+                indicador("Rechazadas", datos.rechazadas);
+
+                indicador(
+                    sinIva ? "Total sin IVA" : "Total con IVA",
+                    moneda(sinIva ? datos.montoSinIva : datos.montoConIva)
+                );
+
+                const filas = datos.detallePorDia ?? [];
+
+                etiquetas = filas.map(fila => fila.fecha);
+                valores = filas.map(fila =>
+                    sinIva ? fila.montoSinIva : fila.montoConIva);
+
+                tituloGrafica = sinIva
+                    ? "Monto sin IVA (Q)"
+                    : "Monto con IVA (Q)";
+
+                agregarSeccion(
+                    "Montos autorizados por fecha",
+                    ["Fecha", "Facturas aprobadas", "Monto"],
+                    filas.map(fila => [
+                        fila.fecha,
+                        fila.aprobadas,
+                        moneda(sinIva
+                            ? fila.montoSinIva
+                            : fila.montoConIva)
+                    ])
+                );
+
+            } else if (tipo === "consulta") {
+
+                const registros = movimiento === "recibidas"
+                    ? datos.facturasRecibidas ?? []
+                    : datos.facturasEmitidas ?? [];
+
+                const agrupadas = {};
+
+                registros.forEach(registro => {
+                    const fecha = (registro.fechaEmision ?? "").substring(0, 10);
+
+                    if (!agrupadas[fecha]) {
+                        agrupadas[fecha] = {
+                            cantidad: 0,
+                            monto: 0
+                        };
+                    }
+
+                    agrupadas[fecha].cantidad++;
+                    agrupadas[fecha].monto +=
+                        registro.solicitud?.TOTAL ?? 0;
+                });
+
+                const filas = Object.entries(agrupadas)
+                    .sort((a, b) => a[0].localeCompare(b[0]))
+                    .map(([fecha, valor]) => [
+                        fecha,
+                        valor.cantidad,
+                        moneda(valor.monto)
+                    ]);
+
+                const total = registros.reduce(
+                    (suma, registro) =>
+                        suma + (registro.solicitud?.TOTAL ?? 0), 0);
+
+                indicador("NIT", datos.nit);
+                indicador("Tipo", movimiento);
+                indicador("Facturas", registros.length);
+                indicador("Total facturado", moneda(total));
+
+                etiquetas = Object.keys(agrupadas).sort();
+                valores = etiquetas.map(fecha =>
+                    agrupadas[fecha].monto);
+
+                tituloGrafica = "Monto facturado (Q)";
+
+                agregarSeccion(
+                    "Facturas agrupadas por fecha",
+                    ["Fecha", "Cantidad", "Monto total"],
+                    filas
+                );
+
+            } else if (tipo === "fechas") {
 
                 indicador("Procesadas", datos.totalProcesadas);
                 indicador("Aprobadas", datos.aprobadas);
@@ -384,26 +515,18 @@
                 etiquetas = ["Aprobadas", "Rechazadas"];
                 valores = [datos.aprobadas ?? 0, datos.rechazadas ?? 0];
 
-                const filas = (datos.detallePorDia ?? []).map(dia => [
-                    dia.fecha,
-                    dia.aprobadas,
-                    dia.rechazadas,
-                    moneda(dia.montoSinIva),
-                    moneda(dia.iva),
-                    moneda(dia.montoConIva)
-                ]);
-
                 agregarSeccion(
                     "Resumen por día",
-                    [
-                        "Fecha",
-                        "Aprobadas",
-                        "Rechazadas",
-                        "Sin IVA",
-                        "IVA",
-                        "Total"
-                    ],
-                    filas
+                    ["Fecha", "Aprobadas", "Rechazadas",
+                     "Sin IVA", "IVA", "Total"],
+                    (datos.detallePorDia ?? []).map(dia => [
+                        dia.fecha,
+                        dia.aprobadas,
+                        dia.rechazadas,
+                        moneda(dia.montoSinIva),
+                        moneda(dia.iva),
+                        moneda(dia.montoConIva)
+                    ])
                 );
 
             } else if (tipo === "contribuyente") {
@@ -418,22 +541,32 @@
                 indicador("Diferencia IVA", moneda(datos.diferenciaIva));
 
                 etiquetas = ["Emitidas", "Recibidas"];
-
                 valores = [
                     datos.cantidadEmitidas ?? 0,
                     datos.cantidadRecibidas ?? 0
                 ];
 
                 const titulos = [
-                    "Referencia",
-                    "NIT emisor",
-                    "NIT receptor",
-                    "Fecha",
-                    "Valor",
-                    "IVA",
-                    "Total",
-                    "Autorización"
+                    "Referencia", "NIT emisor", "NIT receptor",
+                    "Fecha", "Valor", "IVA", "Total", "Autorización"
                 ];
+
+                function filasFacturas(registros) {
+                    return registros.map(registro => {
+                        const f = registro.solicitud ?? {};
+
+                        return [
+                            f.REFERENCIA ?? "",
+                            f.NIT_EMISOR ?? "",
+                            f.NIT_RECEPTOR ?? "",
+                            f.TIEMPO ?? "",
+                            moneda(f.VALOR),
+                            moneda(f.IVA),
+                            moneda(f.TOTAL),
+                            registro.codigoAprobacion ?? ""
+                        ];
+                    });
+                }
 
                 agregarSeccion(
                     "Facturas emitidas",
@@ -475,8 +608,7 @@
                     ([clave, cantidad]) => [
                         nombres[clave] ?? clave,
                         cantidad
-                    ]
-                );
+                    ]);
 
                 etiquetas = filas.map(fila => fila[0]);
                 valores = filas.map(fila => fila[1]);
@@ -491,35 +623,51 @@
             const lienzo = document.getElementById("graficaReporte");
 
             if (typeof Chart !== "undefined") {
-
                 new Chart(lienzo, {
                     type: "bar",
                     data: {
                         labels: etiquetas,
-                        datasets: [{
-                            label: "Cantidad",
-                            data: valores,
-                            backgroundColor: "#2563eb",
-                            borderRadius: 5
-                        }]
+                        
+                        datasets: tipo === "iva"
+                            ? [
+                                {
+                                    label: "IVA emitido",
+                                    data: valores,
+                                    backgroundColor: "#2563eb",
+                                    borderRadius: 5
+                                },
+                                {
+                                    label: "IVA recibido",
+                                    data: valoresRecibidos,
+                                    backgroundColor: "#16a34a",
+                                    borderRadius: 5
+                                }
+                            ]
+                            : [
+                                {
+                                    label: tituloGrafica,
+                                    data: valores,
+                                    backgroundColor: "#2563eb",
+                                    borderRadius: 5
+                                }
+                            ]
+
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         indexAxis: tipo === "errores" ? "y" : "x",
                         scales: {
-                            x: {
-                                beginAtZero: true
-                            },
-                            y: {
-                                beginAtZero: true
-                            }
+                            x: { beginAtZero: true },
+                            y: { beginAtZero: true }
                         },
+                        
                         plugins: {
                             legend: {
-                                display: false
+                                display: tipo === "iva"
                             }
                         }
+
                     }
                 });
             }

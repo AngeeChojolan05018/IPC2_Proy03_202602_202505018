@@ -1,4 +1,6 @@
-
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using IPC2_Proy03_202602_202505018.Modelos;
 
@@ -49,12 +51,20 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             ResultadoActualizacionRTU resultado =
                 new ResultadoActualizacionRTU();
 
+            if (contribuyentes == null)
+            {
+                return resultado;
+            }
+
             foreach (Contribuyente contribuyente in contribuyentes)
             {
-                string nit = (contribuyente.NIT ?? string.Empty)
-                    .Trim()
-                    .Replace("-", "")
-                    .ToUpperInvariant();
+                if (contribuyente == null)
+                {
+                    resultado.NITS_INVALIDOS++;
+                    continue;
+                }
+
+                string nit = NormalizarNit(contribuyente.NIT);
 
                 if (!validador.EsValido(nit))
                 {
@@ -63,8 +73,11 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                 }
 
                 Contribuyente? existente = registrados.Find(
-                    c => c.NIT.Replace("-", "")
-                        .Equals(nit, StringComparison.OrdinalIgnoreCase));
+                    c => c != null &&
+                         string.Equals(
+                             NormalizarNit(c.NIT),
+                             nit,
+                             StringComparison.OrdinalIgnoreCase));
 
                 contribuyente.NIT = nit;
 
@@ -91,6 +104,14 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             File.WriteAllText(rutaArchivo, json);
 
             return resultado;
+        }
+
+        private static string NormalizarNit(string? nit)
+        {
+            return (nit ?? string.Empty)
+                .Trim()
+                .Replace("-", "")
+                .ToUpperInvariant();
         }
     }
 }

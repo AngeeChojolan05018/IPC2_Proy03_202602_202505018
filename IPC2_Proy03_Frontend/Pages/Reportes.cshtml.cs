@@ -18,13 +18,25 @@ namespace IPC2_Proy03_Frontend.Pages
         public string Tipo { get; set; } = "fechas";
 
         [BindProperty(SupportsGet = true)]
-        public DateTime Inicio { get; set; } = new DateTime(2026, 10, 1);
+        public DateTime Inicio { get; set; } =
+            new DateTime(2025, 1, 1);
 
         [BindProperty(SupportsGet = true)]
-        public DateTime Fin { get; set; } = DateTime.Today;
+        public DateTime Fin { get; set; } =
+            DateTime.Today;
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime Fecha { get; set; } =
+            new DateTime(2025, 4, 6);
 
         [BindProperty(SupportsGet = true)]
         public string Nit { get; set; } = "";
+
+        [BindProperty(SupportsGet = true)]
+        public string Movimiento { get; set; } = "emitidas";
+
+        [BindProperty(SupportsGet = true)]
+        public string Monto { get; set; } = "coniva";
 
         public string ResultadoJson { get; set; } = "";
 
@@ -39,47 +51,67 @@ namespace IPC2_Proy03_Frontend.Pages
 
             ConsultaRealizada = true;
 
-            if (Inicio > Fin)
-            {
-                Mensaje = "La fecha inicial no puede ser mayor que la final.";
-                return;
-            }
-
             string ruta;
+            string parametros;
 
-            switch (Tipo)
+            if (Tipo == "iva")
             {
-                case "fechas":
-                    ruta = "api/Reportes/fechas";
-                    break;
-
-                case "contribuyente":
-                    if (string.IsNullOrWhiteSpace(Nit))
-                    {
-                        Mensaje = "Debes ingresar un NIT.";
-                        return;
-                    }
-
-                    ruta = "api/Reportes/contribuyente";
-                    break;
-
-                case "errores":
-                    ruta = "api/Reportes/errores";
-                    break;
-
-                default:
-                    Mensaje = "El tipo de reporte no es válido.";
+                if (Fecha == DateTime.MinValue)
+                {
+                    Mensaje = "Debes seleccionar una fecha válida.";
                     return;
+                }
+
+                ruta = "api/Reportes/resumen-iva";
+
+                parametros = "?fecha=" +
+                    Fecha.ToString("yyyy-MM-dd");
             }
-
-            string parametros =
-                "?inicio=" + Inicio.ToString("yyyy-MM-dd") +
-                "&fin=" + Fin.ToString("yyyy-MM-dd");
-
-            if (Tipo == "contribuyente")
+            else
             {
-                parametros += "&nit=" +
-                    Uri.EscapeDataString(Nit.Trim());
+                if (Inicio == DateTime.MinValue ||
+                    Fin == DateTime.MinValue ||
+                    Inicio.Date > Fin.Date)
+                {
+                    Mensaje =
+                        "El rango de fechas es inválido.";
+                    return;
+                }
+
+                parametros =
+                    "?inicio=" + Inicio.ToString("yyyy-MM-dd") +
+                    "&fin=" + Fin.ToString("yyyy-MM-dd");
+
+                switch (Tipo)
+                {
+                    case "fechas":
+                    case "rango":
+                        ruta = "api/Reportes/fechas";
+                        break;
+
+                    case "contribuyente":
+                    case "consulta":
+                        if (string.IsNullOrWhiteSpace(Nit))
+                        {
+                            Mensaje = "Debes ingresar un NIT.";
+                            return;
+                        }
+
+                        ruta = "api/Reportes/contribuyente";
+
+                        parametros += "&nit=" +
+                            Uri.EscapeDataString(Nit.Trim());
+
+                        break;
+
+                    case "errores":
+                        ruta = "api/Reportes/errores";
+                        break;
+
+                    default:
+                        Mensaje = "El tipo de reporte no es válido.";
+                        return;
+                }
             }
 
             try
@@ -95,7 +127,10 @@ namespace IPC2_Proy03_Frontend.Pages
 
                 if (!respuesta.IsSuccessStatusCode)
                 {
-                    Mensaje = "No se pudo generar el reporte: " + contenido;
+                    Mensaje =
+                        "No se pudo generar el reporte: " +
+                        contenido;
+
                     return;
                 }
 
@@ -113,7 +148,9 @@ namespace IPC2_Proy03_Frontend.Pages
             }
             catch (Exception ex)
             {
-                Mensaje = "Error al consultar la API: " + ex.Message;
+                Mensaje =
+                    "Error al consultar la API: " +
+                    ex.Message;
             }
         }
     }

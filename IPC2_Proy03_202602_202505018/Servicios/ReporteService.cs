@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using IPC2_Proy03_202602_202505018.Modelos;
 
 namespace IPC2_Proy03_202602_202505018.Servicios
@@ -29,13 +30,22 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             decimal iva = 0;
 
             Dictionary<string, ResumenDia> dias = new();
+            HashSet<string> emisores = new();
+            HashSet<string> receptores = new();
+            int emisorInvalido = 0, receptorInvalido = 0;
+            int emisorInexistente = 0, receptorInexistente = 0;
+            int ivaIncorrecto = 0, totalIncorrecto = 0;
+            int referenciaDuplicada = 0, referenciaInvalida = 0;
+            int fechaInvalida = 0, valorInvalido = 0;
 
             foreach (RegistroFactura registro in registros)
             {
-                if (!EnRango(registro, inicio, fin))
+                DateTime? fechaRegistro = ObtenerFechaParaReporte(registro);
+                if (!fechaRegistro.HasValue || fechaRegistro.Value.Date < inicio.Date ||
+                    fechaRegistro.Value.Date > fin.Date)
                     continue;
 
-                string clave = registro.FechaEmision.ToString(
+                string clave = fechaRegistro.Value.ToString(
                     "yyyy-MM-dd",
                     CultureInfo.InvariantCulture);
 
@@ -48,7 +58,22 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                 }
 
                 ResumenDia dia = dias[clave];
-
+                ErroresFactura errores = registro.Errores ?? new ErroresFactura();
+                if (errores.NitEmisorInvalido) { emisorInvalido++; dia.NitEmisorInvalido++; }
+                if (errores.NitReceptorInvalido) { receptorInvalido++; dia.NitReceptorInvalido++; }
+                if (errores.NitEmisorInexistente) { emisorInexistente++; dia.NitEmisorInexistente++; }
+                if (errores.NitReceptorInexistente) { receptorInexistente++; dia.NitReceptorInexistente++; }
+                if (errores.IvaMalCalculado) { ivaIncorrecto++; dia.IvaMalCalculado++; }
+                if (errores.TotalMalCalculado) { totalIncorrecto++; dia.TotalMalCalculado++; }
+                if (errores.ReferenciaDuplicada) { referenciaDuplicada++; dia.ReferenciaDuplicada++; }
+                if (errores.ReferenciaInvalida) { referenciaInvalida++; dia.ReferenciaInvalida++; }
+                if (errores.FechaInvalida) { fechaInvalida++; dia.FechaInvalida++; }
+                if (errores.ValorInvalido) { valorInvalido++; dia.ValorInvalido++; }
+                string emisor = NormalizarNit(registro.Solicitud.NIT_EMISOR);
+                string receptor = NormalizarNit(registro.Solicitud.NIT_RECEPTOR);
+                if (emisor.Length > 0) { emisores.Add(emisor); dia.Emisores.Add(emisor); }
+                if (receptor.Length > 0) { receptores.Add(receptor); dia.Receptores.Add(receptor); }
+                dia.TotalFacturas++;
                 if (registro.Aprobada)
                 {
                     aprobadas++;
@@ -84,6 +109,22 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                 MontoSinIva = montoSinIva,
                 MontoConIva = montoConIva,
                 Iva = iva,
+                FacturasSinErrores = aprobadas,
+                EmisoresDistintos = emisores.Count,
+                ReceptoresDistintos = receptores.Count,
+                Errores = new
+                {
+                    NitEmisorInvalido = emisorInvalido,
+                    NitReceptorInvalido = receptorInvalido,
+                    NitEmisorInexistente = emisorInexistente,
+                    NitReceptorInexistente = receptorInexistente,
+                    IvaMalCalculado = ivaIncorrecto,
+                    TotalMalCalculado = totalIncorrecto,
+                    ReferenciaDuplicada = referenciaDuplicada,
+                    ReferenciaInvalida = referenciaInvalida,
+                    FechaInvalida = fechaInvalida,
+                    ValorInvalido = valorInvalido
+                },
                 DetallePorDia = detalle
             };
         }
@@ -109,6 +150,7 @@ namespace IPC2_Proy03_202602_202505018.Servicios
 
             List<RegistroFactura> facturasEmitidas = new();
             List<RegistroFactura> facturasRecibidas = new();
+            Dictionary<string, DetalleContribuyenteDia> porDia = new();
 
             foreach (RegistroFactura registro in registros)
             {
@@ -119,10 +161,16 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                 }
 
                 Factura factura = registro.Solicitud;
+                string clave = registro.FechaEmision.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                if (!porDia.ContainsKey(clave))
+                    porDia[clave] = new DetalleContribuyenteDia { Fecha = clave };
+                DetalleContribuyenteDia dia = porDia[clave];
 
                 if (NormalizarNit(factura.NIT_EMISOR) == nitBuscado)
                 {
                     emitidas++;
+                    dia.CantidadEmitidas++;
+                    dia.MontoEmitido += factura.TOTAL;
                     montoEmitido += factura.TOTAL;
                     ivaEmitido += factura.IVA;
 
@@ -132,12 +180,18 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                 if (NormalizarNit(factura.NIT_RECEPTOR) == nitBuscado)
                 {
                     recibidas++;
+                    dia.CantidadRecibidas++;
+                    dia.MontoRecibido += factura.TOTAL;
                     montoRecibido += factura.TOTAL;
                     ivaRecibido += factura.IVA;
 
                     facturasRecibidas.Add(registro);
                 }
             }
+
+            List<DetalleContribuyenteDia> detalleDiario = new(porDia.Values);
+            detalleDiario.RemoveAll(d => d.CantidadEmitidas == 0 && d.CantidadRecibidas == 0);
+            detalleDiario.Sort((a, b) => string.CompareOrdinal(a.Fecha, b.Fecha));
 
             return new
             {
@@ -157,6 +211,7 @@ namespace IPC2_Proy03_202602_202505018.Servicios
 
                 DiferenciaIva = ivaEmitido - ivaRecibido,
 
+                DetallePorDia = detalleDiario,
                 FacturasEmitidas = facturasEmitidas,
                 FacturasRecibidas = facturasRecibidas
             };
@@ -306,6 +361,71 @@ namespace IPC2_Proy03_202602_202505018.Servicios
             };
         }
 
+
+        // RESUMEN DE IVA POR FECHA Y NIT
+
+        public object ResumenIvaPorFecha(DateTime fecha)
+        {
+            List<RegistroFactura> registros =
+                autorizaciones.ObtenerFacturas();
+
+            Dictionary<string, ResumenIvaNit> resumen = new();
+
+            foreach (RegistroFactura registro in registros)
+            {
+                if (!registro.Aprobada ||
+                    registro.FechaEmision.Date != fecha.Date)
+                {
+                    continue;
+                }
+
+                Factura factura = registro.Solicitud;
+
+                string emisor = NormalizarNit(factura.NIT_EMISOR);
+                string receptor = NormalizarNit(factura.NIT_RECEPTOR);
+
+                if (!resumen.ContainsKey(emisor))
+                {
+                    resumen[emisor] = new ResumenIvaNit
+                    {
+                        NIT = emisor
+                    };
+                }
+
+                if (!resumen.ContainsKey(receptor))
+                {
+                    resumen[receptor] = new ResumenIvaNit
+                    {
+                        NIT = receptor
+                    };
+                }
+
+                resumen[emisor].IvaEmitido += factura.IVA;
+                resumen[receptor].IvaRecibido += factura.IVA;
+            }
+
+            List<ResumenIvaNit> detalle = new(resumen.Values);
+
+            detalle.Sort((a, b) =>
+                string.CompareOrdinal(a.NIT, b.NIT));
+
+            return new
+            {
+                Fecha = fecha.ToString("yyyy-MM-dd"),
+                Detalle = detalle
+            };
+        }
+
+        public class ResumenIvaNit
+        {
+            public string NIT { get; set; } = "";
+
+            public decimal IvaEmitido { get; set; }
+
+            public decimal IvaRecibido { get; set; }
+        }
+
+
         // COMPRUEBA SI LA FACTURA ESTA DENTRO DEL RANGO
         private static bool EnRango(
             RegistroFactura registro,
@@ -329,25 +449,14 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                 return registro.FechaEmision;
 
             string tiempo = registro.Solicitud.TIEMPO ?? "";
-
-            string fechaTexto = tiempo
-                .Replace("Guatemala,", "")
-                .Replace("hrs.", "")
-                .Trim();
-
-            bool valida = DateTime.TryParseExact(
-                fechaTexto,
-                "dd/MM/yyyy HH:mm",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out DateTime fecha);
-
-            if (valida)
-                return fecha;
-
-            // Una fecha imposible no puede asignarse
-            // confiablemente a un rango de fechas.
-            return null;
+            Match coincidencia = Regex.Match(tiempo,
+                @"(?<!\d)\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}(?!\d)");
+            if (!coincidencia.Success) return null;
+            string[] formatos = { "d/M/yyyy H:mm", "dd/MM/yyyy HH:mm",
+                "d/MM/yyyy H:mm", "dd/M/yyyy HH:mm" };
+            return DateTime.TryParseExact(coincidencia.Value, formatos,
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime fecha)
+                ? fecha : null;
         }
 
         // NORMALIZA EL NIT
@@ -359,11 +468,36 @@ namespace IPC2_Proy03_202602_202505018.Servicios
                 .ToUpperInvariant();
         }
 
+        public class DetalleContribuyenteDia
+        {
+            public string Fecha { get; set; } = "";
+            public int CantidadEmitidas { get; set; }
+            public int CantidadRecibidas { get; set; }
+            public decimal MontoEmitido { get; set; }
+            public decimal MontoRecibido { get; set; }
+        }
+
         // MODELO DEL RESUMEN DIARIO
         public class ResumenDia
         {
             public string Fecha { get; set; } = "";
 
+            public int TotalFacturas { get; set; }
+            public int FacturasSinErrores => Aprobadas;
+            public HashSet<string> Emisores { get; set; } = new();
+            public HashSet<string> Receptores { get; set; } = new();
+            public int EmisoresDistintos => Emisores.Count;
+            public int ReceptoresDistintos => Receptores.Count;
+            public int NitEmisorInvalido { get; set; }
+            public int NitReceptorInvalido { get; set; }
+            public int NitEmisorInexistente { get; set; }
+            public int NitReceptorInexistente { get; set; }
+            public int IvaMalCalculado { get; set; }
+            public int TotalMalCalculado { get; set; }
+            public int ReferenciaDuplicada { get; set; }
+            public int ReferenciaInvalida { get; set; }
+            public int FechaInvalida { get; set; }
+            public int ValorInvalido { get; set; }
             public int Aprobadas { get; set; }
 
             public int Rechazadas { get; set; }

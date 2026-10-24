@@ -1,0 +1,37 @@
+﻿@page
+@model IPC2_Proy03_Frontend.Pages.InicializarModel
+
+@{
+    ViewData["Title"] = "Inicializar sistema";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="card p-4">
+
+        <h2>Inicializar sistema</h2>
+
+        <p>
+            Esta opción elimina todos los registros
+            actuales del RTU y de las facturas.
+        </p>
+
+        @if (!string.IsNullOrEmpty(Model.Mensaje))
+        {
+            <div class="alert alert-info">
+                @Model.Mensaje
+            </div>
+        }
+
+        <form method="post"
+              onsubmit="return confirm('¿Seguro que deseas borrar todos los contribuyentes y facturas?');">
+
+            <button type="submit" class="btn btn-danger">
+                Inicializar todos los datos
+            </button>
+
+        </form>
+
+    </div>
+
+</div>

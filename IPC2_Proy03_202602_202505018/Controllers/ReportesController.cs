@@ -59,5 +59,25 @@ namespace IPC2_Proy03_202602_202505018.Controllers
                    fin != DateTime.MinValue &&
                    inicio.Date <= fin.Date;
         }
+
+
+        // RESUMEN DE IVA POR FECHA Y NIT
+
+        [HttpGet("resumen-iva")]
+        public IActionResult ResumenIva([FromQuery] DateTime fecha)
+        {
+            if (fecha == default)
+            {
+                return BadRequest(new
+                {
+                    error = "Debe indicar una fecha válida."
+                });
+            }
+
+            return Ok(servicio.ResumenIvaPorFecha(fecha));
+        }
+
+
     }
+
 }
